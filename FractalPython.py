@@ -5,6 +5,7 @@ from PIL import Image
 import pyximport; pyximport.install()
 import FractalTransform
 from FractalTransform import Point
+import FractalSimulator
 
 a = FractalTransform.Affine()
 print a.transform(Point(0, 0))

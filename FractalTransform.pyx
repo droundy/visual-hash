@@ -6,7 +6,7 @@ import random
 cdef class Point:
     cdef public double x
     cdef public double y
-    def __init__(self, x, y):
+    def __cinit__(self, x, y):
         self.x = x
         self.y = y
     def __str__(self):
@@ -39,7 +39,7 @@ cdef class Transform:
 cdef class Affine(Transform):
     cdef public double Mxx, Mxy, Myx, Myy, Ox, Oy
     cdef public Point O
-    def __init__(self):
+    def __cinit__(self):
         # currently we always initialize pseudorandomly, but
         # eventually we'll want to generate this deterministically.
         self.O = Point(random.uniform(-1,1), random.uniform(-1,1))
