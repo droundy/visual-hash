@@ -5,18 +5,22 @@ from PIL import Image
 import pyximport; pyximport.install()
 import FractalTransform
 from FractalTransform import Point
-import FractalSimulator
 
 a = FractalTransform.Affine()
 print a.transform(Point(0, 0))
 print a
 
-img = Image.new( 'RGB', (255,255), "black") # create a new black image
+size = 255
+h = FractalTransform.Simulate(a, Point(.1,.2), size, size)
+
+img = Image.new( 'RGB', (size,size), "black") # create a new black image
 pixels = img.load() # create the pixel map
+
+colors = FractalTransform.get_colors(h)
 
 for i in range(img.size[0]):    # for every pixel:
     for j in range(img.size[1]):
-        pixels[i,j] = (i, j, 200) # set the colour accordingly
+        pixels[i,j] = (int(256*colors[0,i,j]), int(256*colors[1,i,j]), int(256*colors[2,i,j])) # set the colour accordingly
 
 img.save('image.png')
-img.show()
+#img.show()
