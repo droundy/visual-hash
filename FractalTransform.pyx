@@ -4,7 +4,7 @@
 import random
 
 from libc.stdlib cimport rand
-from libc.math cimport log, sqrt
+from libc.math cimport log, sqrt, cos, sin
 from cython cimport view
 
 import numpy as np
@@ -85,30 +85,43 @@ cdef class Affine(Transform):
     def __cinit__(self):
         # currently we always initialize pseudorandomly, but
         # eventually we'll want to generate this deterministically.
-        self.Ox = random.uniform(-1,1)
-        self.Oy = random.uniform(-1,1)
-        self.Mxx = Root(random.uniform(-1,1))
-        self.Mxy = random.uniform(-1,1)
-        self.Myx = random.uniform(-1,1)
-        self.Myy = Root(random.uniform(-1,1))
-        cdef double scale = Root(self.Mxx*self.Myy + self.Mxy*self.Myx)
-        self.Ox = random.uniform(-1+scale, 1-scale)
-        self.Oy = random.uniform(-1+scale, 1-scale)
+        cdef double theta = random.uniform(0, 2*np.pi)
+        rot = np.matrix([[cos(theta), sin(theta)],
+                         [-sin(theta),cos(theta)]])
+        cdef double compressme = random.gauss(0.7, 0.2)
+        print compressme
+        compress = np.matrix([[compressme, 0],
+                              [0, compressme]])
+        mat = compress*rot
+        self.Mxx = mat[0,0]
+        self.Mxy = mat[0,1]
+        self.Myx = mat[1,0]
+        self.Myy = mat[1,1]
+        #print mat
+        #cdef double scale = Root(self.Mxx*self.Myy - self.Mxy*self.Myx)
+        cdef double translation_scale = 0.8
+        self.Ox = random.gauss(0, translation_scale)
+        self.Oy = random.gauss(0, translation_scale)
     cpdef Point transform(self, Point p):
         cdef Point out = self.colortransform(p)
-        out.x = p.x*self.Mxx + p.y*self.Mxy + self.Ox
-        out.y = p.x*self.Myx + p.y*self.Myy + self.Oy
+        p.x -= self.Ox
+        p.y -= self.Oy
+        out.x = p.x*self.Mxx + p.y*self.Mxy # + self.Ox
+        out.y = p.x*self.Myx + p.y*self.Myy # + self.Oy
+        #p.x += self.Ox
+        #p.y += self.Oy
         return out
     def __str__(self):
         return 'M='+str(((self.Mxx, self.Mxy), (self.Myx, self.Myy))) + ' O='+str(self.O) + ' C=%g, %g, %g, %g' % (self.R, self.G, self.B, self.A)
 
+cdef int Ntransform = 5
 class Multiple(Transform):
     def __init__(self):
-        self.t = [1]*10
-        for i in xrange(10):
+        self.t = [1]*Ntransform
+        for i in xrange(Ntransform):
             self.t[i] = Affine()
     def transform(self, p):
-        return self.t[rand() % 10].transform(p)
+        return self.t[rand() % Ntransform].transform(p)
 
 cdef class CMultiple(Transform):
     cdef Transform a, b, c, d, e, f, g, h, i, j
@@ -124,7 +137,7 @@ cdef class CMultiple(Transform):
         self.i = Affine()
         self.j = Affine()
     cpdef Point transform(self, Point p):
-        cdef int n = rand() % 10
+        cdef int n = rand() % Ntransform
         if n == 1:
             return self.b.transform(p)
         elif n == 2:

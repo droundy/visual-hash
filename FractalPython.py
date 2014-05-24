@@ -2,13 +2,13 @@
 
 from PIL import Image
 import random
-random.seed(0)
+#random.seed(0)
 
 import pyximport; pyximport.install()
 import FractalTransform
 from FractalTransform import Point
 
-a = FractalTransform.CMultiple()
+a = FractalTransform.Multiple()
 print a.transform(Point(0, 0))
 print a
 
