@@ -4,7 +4,7 @@
 import random
 
 from libc.stdlib cimport rand
-from libc.math cimport log, sqrt, cos, sin
+from libc.math cimport log, sqrt, cos, sin, atan2
 from cython cimport view
 
 import numpy as np
@@ -88,8 +88,7 @@ cdef class Affine(Transform):
         cdef double theta = random.uniform(0, 2*np.pi)
         rot = np.matrix([[cos(theta), sin(theta)],
                          [-sin(theta),cos(theta)]])
-        cdef double compressme = random.gauss(0.7, 0.2)
-        print compressme
+        cdef double compressme = random.gauss(0.8, 0.2)
         compress = np.matrix([[compressme, 0],
                               [0, compressme]])
         mat = compress*rot
@@ -97,8 +96,6 @@ cdef class Affine(Transform):
         self.Mxy = mat[0,1]
         self.Myx = mat[1,0]
         self.Myy = mat[1,1]
-        #print mat
-        #cdef double scale = Root(self.Mxx*self.Myy - self.Mxy*self.Myx)
         cdef double translation_scale = 0.8
         self.Ox = random.gauss(0, translation_scale)
         self.Oy = random.gauss(0, translation_scale)
@@ -114,14 +111,67 @@ cdef class Affine(Transform):
     def __str__(self):
         return 'M='+str(((self.Mxx, self.Mxy), (self.Myx, self.Myy))) + ' O='+str(self.O) + ' C=%g, %g, %g, %g' % (self.R, self.G, self.B, self.A)
 
-cdef int Ntransform = 5
+
+cdef class Fancy(Affine):
+    cdef double spiralness, radius
+    def __cinit__(self):
+        self.spiralness = random.gauss(0, 1)
+        self.radius = random.gauss(sqrt(2), sqrt(2))
+    cpdef Point transform(self, Point p):
+        cdef Point out = Affine.transform(self,p)
+        cdef Point nex = out
+        cdef double r = sqrt(out.x*out.x + out.y*out.y)
+        cdef double theta = atan2(out.y, out.x)
+        nex.x = self.radius*sin(r/self.radius)*sin(theta + self.spiralness*r)
+        nex.y = self.radius*sin(r/self.radius)*cos(theta + self.spiralness*r)
+        nex.x = sin(nex.x)
+        nex.y = sin(nex.y)
+        return nex
+
+cdef class Symmetry(Affine):
+    cdef int Nsym
+    def __cinit__(self):
+        cdef double nnn = random.expovariate(1.0/5)
+        self.Nsym = 1 + <int>nnn
+        print 'Rotation:', self.Nsym, 'from', nnn
+        self.Mxx = cos(2*np.pi/self.Nsym)
+        self.Myy = self.Mxx
+        self.Mxy = sin(2*np.pi/self.Nsym)
+        self.Myx = -self.Mxy
+        self.Ox /= 2
+        self.Oy /= 2
+        print np.array([[self.Mxx, self.Mxy],
+                        [self.Myx, self.Myy]])
+        print 'origin', self.Ox, self.Oy
+    cpdef Point transform(self, Point p):
+        # print 'before:', p
+        cdef double px = p.x
+        cdef double py = p.y
+        px -= self.Ox
+        py -= self.Oy
+        p.x = px*self.Mxx + py*self.Mxy
+        p.y = px*self.Myx + py*self.Myy
+        p.x += self.Ox
+        p.y += self.Oy
+        # print 'after:', p
+        # print 'xx', self.Mxx
+        # print 'xy', self.Mxy
+        # print 'yx', self.Myx
+        # print 'yy', self.Myy
+        # exit(1)
+        return p
+
+cdef int Ntransform = 10
 class Multiple(Transform):
     def __init__(self):
         self.t = [1]*Ntransform
         for i in xrange(Ntransform):
-            self.t[i] = Affine()
+            self.t[i] = Fancy()
+        symm = Symmetry()
+        if symm.Nsym > 1:
+            self.t = self.t + [symm]*((symm.Nsym-1)*Ntransform)
     def transform(self, p):
-        return self.t[rand() % Ntransform].transform(p)
+        return self.t[rand() % len(self.t)].transform(p)
 
 cdef class CMultiple(Transform):
     cdef Transform a, b, c, d, e, f, g, h, i, j

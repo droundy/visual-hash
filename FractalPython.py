@@ -9,11 +9,9 @@ import FractalTransform
 from FractalTransform import Point
 
 a = FractalTransform.Multiple()
-print a.transform(Point(0, 0))
-print a
 
 size = 255
-h = FractalTransform.Simulate(a, Point(.1,.2), size, size)
+h = FractalTransform.Simulate(a, Point(.1,.232332), size, size)
 
 img = Image.new( 'RGB', (size,size), "black") # create a new black image
 pixels = img.load() # create the pixel map
