@@ -2,6 +2,11 @@
 #        ^^^ Turns on nonecheck globally
 
 import random
+
+from libc.stdlib cimport rand
+from libc.math cimport log, sqrt
+from cython cimport view
+
 import numpy as np
 cimport numpy as np
 # We now need to fix a datatype for our arrays. I've used the variable
@@ -69,25 +74,76 @@ cdef class Transform:
         p.A = (self.A+p.A)/2
         return p
 
+cdef Root(double x):
+   if x < 0:
+       return -sqrt(-x)
+   return sqrt(x)
+
 cdef class Affine(Transform):
     cdef public double Mxx, Mxy, Myx, Myy, Ox, Oy
     cdef public Point O
     def __cinit__(self):
         # currently we always initialize pseudorandomly, but
         # eventually we'll want to generate this deterministically.
-        self.O = Point(random.uniform(-1,1), random.uniform(-1,1))
-        self.Mxx = random.uniform(-1,1)
+        self.Ox = random.uniform(-1,1)
+        self.Oy = random.uniform(-1,1)
+        self.Mxx = Root(random.uniform(-1,1))
         self.Mxy = random.uniform(-1,1)
         self.Myx = random.uniform(-1,1)
-        self.Myy = random.uniform(-1,1)
+        self.Myy = Root(random.uniform(-1,1))
+        cdef double scale = Root(self.Mxx*self.Myy + self.Mxy*self.Myx)
+        self.Ox = random.uniform(-1+scale, 1-scale)
+        self.Oy = random.uniform(-1+scale, 1-scale)
     cpdef Point transform(self, Point p):
-        p.isub(self.O) # or p -= self.O would that be slower?
         cdef Point out = self.colortransform(p)
-        out.x = p.x*self.Mxx + p.y*self.Mxy
-        out.y = p.x*self.Myx + p.y*self.Myy
+        out.x = p.x*self.Mxx + p.y*self.Mxy + self.Ox
+        out.y = p.x*self.Myx + p.y*self.Myy + self.Oy
         return out
     def __str__(self):
         return 'M='+str(((self.Mxx, self.Mxy), (self.Myx, self.Myy))) + ' O='+str(self.O) + ' C=%g, %g, %g, %g' % (self.R, self.G, self.B, self.A)
+
+class Multiple(Transform):
+    def __init__(self):
+        self.t = [1]*10
+        for i in xrange(10):
+            self.t[i] = Affine()
+    def transform(self, p):
+        return self.t[rand() % 10].transform(p)
+
+cdef class CMultiple(Transform):
+    cdef Transform a, b, c, d, e, f, g, h, i, j
+    def __init__(self):
+        self.a = Affine()
+        self.b = Affine()
+        self.c = Affine()
+        self.d = Affine()
+        self.e = Affine()
+        self.f = Affine()
+        self.g = Affine()
+        self.h = Affine()
+        self.i = Affine()
+        self.j = Affine()
+    cpdef Point transform(self, Point p):
+        cdef int n = rand() % 10
+        if n == 1:
+            return self.b.transform(p)
+        elif n == 2:
+            return self.c.transform(p)
+        elif n == 3:
+            return self.d.transform(p)
+        elif n == 4:
+            return self.e.transform(p)
+        elif n == 5:
+            return self.f.transform(p)
+        elif n == 6:
+            return self.g.transform(p)
+        elif n == 7:
+            return self.h.transform(p)
+        elif n == 8:
+            return self.i.transform(p)
+        elif n == 9:
+            return self.j.transform(p)
+        return self.a.transform(p)
 
 cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p):
     cdef int ix = <int>((p.x+1)/2*h.shape[1])
@@ -100,7 +156,7 @@ cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p):
 cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Transform t, Point p,
                                            int nx, int ny):
     cdef np.ndarray[DTYPE_t, ndim=3] h = np.zeros([4, nx,ny], dtype=DTYPE)
-    for i in xrange(1000):
+    for i in xrange(100*nx*ny):
         place_point(h, p)
         p = t.transform(p)
     return h
@@ -108,6 +164,8 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Transform t, Point p,
 cpdef np.ndarray[DTYPE_t, ndim=3] get_colors(np.ndarray[DTYPE_t, ndim=3] h):
     cdef np.ndarray[DTYPE_t, ndim=3] img = np.zeros([3, h.shape[1], h.shape[2]], dtype=DTYPE)
     cdef DTYPE_t maxa = 0
+    cdef DTYPE_t mean_nonzero_a = 0
+    cdef int num_nonzero = 0
     cdef DTYPE_t mina = 1e300
     for i in xrange(h.shape[1]):
         for j in xrange(h.shape[2]):
@@ -115,9 +173,18 @@ cpdef np.ndarray[DTYPE_t, ndim=3] get_colors(np.ndarray[DTYPE_t, ndim=3] h):
                 maxa = h[0,i,j]
             if h[0,i,j] > 0 and h[0,i,j] < mina:
                 mina = h[0,i,j]
+            if h[0,i,j] > 0:
+                mean_nonzero_a += h[0,i,j]
+                num_nonzero += 1
+    mean_nonzero_a /= num_nonzero
+    cdef double factor = maxa/(mean_nonzero_a*mean_nonzero_a)
+    cdef double norm = 1.0/log(factor*maxa)
+    cdef double a
     for i in xrange(h.shape[1]):
         for j in xrange(h.shape[2]):
-            img[0,i,j] = h[1,i,j]/maxa
-            img[1,i,j] = h[2,i,j]/maxa
-            img[2,i,j] = h[3,i,j]/maxa
+            if h[0,i,j] > 0:
+                a = norm*log(factor*h[0,i,j]);
+                img[0,i,j] = h[1,i,j]/h[0,i,j]*a
+                img[1,i,j] = h[2,i,j]/h[0,i,j]*a
+                img[2,i,j] = h[3,i,j]/h[0,i,j]*a
     return img
