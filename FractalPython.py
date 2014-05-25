@@ -6,12 +6,11 @@ import random
 
 import pyximport; pyximport.install()
 import FractalTransform
-from FractalTransform import Point
 
-a = FractalTransform.Multiple()
+a = FractalTransform.CMultiple()
 
-size = 255
-h = FractalTransform.Simulate(a, Point(.1,.232332), size, size)
+size = 128
+h = FractalTransform.Simulate(a, FractalTransform.MakePoint(.1,.232332), size, size)
 
 img = Image.new( 'RGB', (size,size), "black") # create a new black image
 pixels = img.load() # create the pixel map

@@ -18,39 +18,16 @@ DTYPE = np.double
 # type with a _t-suffix.
 ctypedef np.double_t DTYPE_t
 
-cdef class Point:
-    cdef public double x, y, R, G, B, A
-    def __cinit__(self, x, y):
-        self.x = x
-        self.y = y
-        self.A = 0
-        self.R = 0
-        self.G = 0
-        self.B = 0
-    def __str__(self):
-        return str((self.x, self.y)) + ' color ' + str((self.R, self.G, self.B, self.A))
-    cpdef Point add(self, Point p):
-        return Point(self.x + p.x, self.y + p.y)
-    def __add__(self, p):
-        return self.add(p)
-    cpdef iadd(self, Point p):
-        self.x += p.x
-        self.y += p.y
-    def __iadd__(self, p):
-        self.iadd(p)
-    cpdef Point sub(self, Point p):
-        return Point(self.x - p.x, self.y - p.y)
-    def __sub__(self, p):
-        return self.sub(p)
-    cpdef isub(self, Point p):
-        self.x -= p.x
-        self.y -= p.y
-    def __isub__(self, p):
-        self.isub(p)
+cdef struct Point:
+    double x, y, R, G, B, A
+
+def MakePoint(x, y):
+    cdef Point p = Point(x, y, 0,0,0,0)
+    return p
 
 cdef class Transform:
-    cpdef Point transform(self, Point p):
-        return Point(0, 0)
+    cdef Point transform(self, Point p):
+        return Point(0, 0, 0, 0, 0, 0)
     cdef double R, G, B, A
     def __call__(self, p):
         return self.transform(p)
@@ -67,7 +44,7 @@ cdef class Transform:
         self.R /= m
         self.G /= m
         self.B /= m
-    cpdef Point colortransform(self, Point p):
+    cdef Point colortransform(self, Point p):
         p.R = (self.A*self.R + p.A*p.R)/(self.A + p.A)
         p.G = (self.A*self.G + p.A*p.G)/(self.A + p.A)
         p.B = (self.A*self.B + p.A*p.B)/(self.A + p.A)
@@ -94,7 +71,7 @@ cdef class Affine(Transform):
         cdef double translation_scale = 0.8
         self.Ox = random.gauss(0, translation_scale)
         self.Oy = random.gauss(0, translation_scale)
-    cpdef Point transform(self, Point p):
+    cdef Point transform(self, Point p):
         cdef Point out = self.colortransform(p)
         p.x -= self.Ox
         p.y -= self.Oy
@@ -112,7 +89,7 @@ cdef class Fancy(Affine):
     def __cinit__(self):
         self.spiralness = random.gauss(0, 3)
         self.radius = random.gauss(sqrt(2), sqrt(2)/2)
-    cpdef Point transform(self, Point p):
+    cdef Point transform(self, Point p):
         cdef Point out = Affine.transform(self,p)
         cdef Point nex = out
         cdef double r = sqrt(out.x*out.x + out.y*out.y)
@@ -133,15 +110,24 @@ cdef class Symmetry(Affine):
         self.Nsym = 1 + <int>nnn
         if self.Nsym == 1 and random.randint(0,1) == 0:
             print 'Mirror plane'
-        print 'Rotation:', self.Nsym, 'from', nnn
-        self.Mxx = cos(2*np.pi/self.Nsym)
-        self.Myy = self.Mxx
-        self.Mxy = sin(2*np.pi/self.Nsym)
-        self.Myx = -self.Mxy
+            self.Nsym = 2
+            theta = random.uniform(0, 2*np.pi)
+            vx = sin(theta)
+            vy = cos(theta)
+            self.Mxx = vx
+            self.Myy = -vx
+            self.Mxy = vy
+            self.Myx = vy
+        else:
+            print 'Rotation:', self.Nsym, 'from', nnn
+            self.Mxx = cos(2*np.pi/self.Nsym)
+            self.Myy = self.Mxx
+            self.Mxy = sin(2*np.pi/self.Nsym)
+            self.Myx = -self.Mxy
         print np.array([[self.Mxx, self.Mxy],
                         [self.Myx, self.Myy]])
         print 'origin', self.Ox, self.Oy
-    cpdef Point transform(self, Point p):
+    cdef Point transform(self, Point p):
         cdef double px = p.x
         cdef double py = p.y
         px -= self.Ox
@@ -169,19 +155,29 @@ class Multiple(Transform):
 
 cdef class CMultiple(Transform):
     cdef Transform a, b, c, d, e, f, g, h, i, j
+    cdef Symmetry symm
+    cdef int N, Ntot
     def __init__(self):
-        self.a = Affine()
-        self.b = Affine()
-        self.c = Affine()
-        self.d = Affine()
-        self.e = Affine()
-        self.f = Affine()
-        self.g = Affine()
-        self.h = Affine()
-        self.i = Affine()
-        self.j = Affine()
-    cpdef Point transform(self, Point p):
-        cdef int n = rand() % Ntransform
+        print 'using CMultiple'
+        self.symm = Symmetry()
+        self.N = Ntransform - self.symm.Nsym
+        if self.N < 4:
+            self.N = 4
+        self.Ntot = self.symm.Nsym*self.N
+        self.a = Fancy()
+        self.b = Fancy()
+        self.c = Fancy()
+        self.d = Fancy()
+        self.e = Fancy()
+        self.f = Fancy()
+        self.g = Fancy()
+        self.h = Fancy()
+        self.i = Fancy()
+        self.j = Fancy()
+    cdef Point transform(self, Point p):
+        cdef int n = rand() % self.Ntot
+        if n >= self.N:
+            return self.symm.transform(p)
         if n == 1:
             return self.b.transform(p)
         elif n == 2:
@@ -210,10 +206,10 @@ cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p):
     h[2, ix % h.shape[1], iy % h.shape[2]] += p.G
     h[3, ix % h.shape[1], iy % h.shape[2]] += p.B
 
-cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Transform t, Point p,
+cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(CMultiple t, Point p,
                                            int nx, int ny):
     cdef np.ndarray[DTYPE_t, ndim=3] h = np.zeros([4, nx,ny], dtype=DTYPE)
-    for i in xrange(100*nx*ny):
+    for i in xrange(400*nx*ny):
         place_point(h, p)
         p = t.transform(p)
     return h
