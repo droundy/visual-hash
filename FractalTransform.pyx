@@ -74,11 +74,6 @@ cdef class Transform:
         p.A = (self.A+p.A)/2
         return p
 
-cdef Root(double x):
-   if x < 0:
-       return -sqrt(-x)
-   return sqrt(x)
-
 cdef class Affine(Transform):
     cdef public double Mxx, Mxy, Myx, Myy, Ox, Oy
     cdef public Point O
@@ -115,8 +110,8 @@ cdef class Affine(Transform):
 cdef class Fancy(Affine):
     cdef double spiralness, radius
     def __cinit__(self):
-        self.spiralness = random.gauss(0, 1)
-        self.radius = random.gauss(sqrt(2), sqrt(2))
+        self.spiralness = random.gauss(0, 3)
+        self.radius = random.gauss(sqrt(2), sqrt(2)/2)
     cpdef Point transform(self, Point p):
         cdef Point out = Affine.transform(self,p)
         cdef Point nex = out
@@ -131,20 +126,22 @@ cdef class Fancy(Affine):
 cdef class Symmetry(Affine):
     cdef int Nsym
     def __cinit__(self):
-        cdef double nnn = random.expovariate(1.0/5)
+        cdef double theta = random.uniform(0, 2*np.pi)
+        self.Ox /= 3
+        self.Oy /= 3
+        cdef double nnn = random.expovariate(1.0/4)
         self.Nsym = 1 + <int>nnn
+        if self.Nsym == 1 and random.randint(0,1) == 0:
+            print 'Mirror plane'
         print 'Rotation:', self.Nsym, 'from', nnn
         self.Mxx = cos(2*np.pi/self.Nsym)
         self.Myy = self.Mxx
         self.Mxy = sin(2*np.pi/self.Nsym)
         self.Myx = -self.Mxy
-        self.Ox /= 2
-        self.Oy /= 2
         print np.array([[self.Mxx, self.Mxy],
                         [self.Myx, self.Myy]])
         print 'origin', self.Ox, self.Oy
     cpdef Point transform(self, Point p):
-        # print 'before:', p
         cdef double px = p.x
         cdef double py = p.y
         px -= self.Ox
@@ -153,23 +150,20 @@ cdef class Symmetry(Affine):
         p.y = px*self.Myx + py*self.Myy
         p.x += self.Ox
         p.y += self.Oy
-        # print 'after:', p
-        # print 'xx', self.Mxx
-        # print 'xy', self.Mxy
-        # print 'yx', self.Myx
-        # print 'yy', self.Myy
-        # exit(1)
         return p
 
 cdef int Ntransform = 10
 class Multiple(Transform):
     def __init__(self):
-        self.t = [1]*Ntransform
-        for i in xrange(Ntransform):
-            self.t[i] = Fancy()
         symm = Symmetry()
+        self.N = Ntransform - symm.Nsym
+        if self.N < 4:
+            self.N = 4
+        self.t = [1]*self.N
+        for i in xrange(self.N):
+            self.t[i] = Fancy()
         if symm.Nsym > 1:
-            self.t = self.t + [symm]*((symm.Nsym-1)*Ntransform)
+            self.t = self.t + [symm]*((symm.Nsym-1)*self.N)
     def transform(self, p):
         return self.t[rand() % len(self.t)].transform(p)
 
