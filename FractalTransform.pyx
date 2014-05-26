@@ -3,7 +3,6 @@
 
 import random
 
-from libc.stdlib cimport rand
 from libc.math cimport log, sqrt, cos, sin, atan2
 from cython cimport view
 
@@ -17,6 +16,16 @@ DTYPE = np.double
 # every type in the numpy module there's a corresponding compile-time
 # type with a _t-suffix.
 ctypedef np.double_t DTYPE_t
+
+# QuickRandom is a low-quality random number generator used for the
+# chaos game only.  It should ensure that we always generate an
+# identical image for a given resolution.
+cdef struct QuickRandom:
+  unsigned int m_w, m_z
+cdef unsigned int quickrand32(QuickRandom *s):
+    s.m_z = 36969 * (s.m_z & 65535) + (s.m_z >> 16)
+    s.m_w = 18000 * (s.m_w & 65535) + (s.m_w >> 16)
+    return (s.m_z << 16) + s.m_w  # 32-bit result
 
 cdef struct Point:
     double x, y, R, G, B, A
@@ -180,8 +189,8 @@ cdef CMultiple MakeCMultiple():
     m.Ntot = m.N*m.s.Nsym
     return m
 
-cdef Point multipleTransform(CMultiple m, Point p):
-    cdef int i = rand() % m.Ntot
+cdef Point multipleTransform(CMultiple m, Point p, QuickRandom *r):
+    cdef int i = quickrand32(r) % m.Ntot
     if i < m.N:
         return fancyTransform(m.t[i], p)
     return symmetryTransform(m.s, p)
@@ -191,8 +200,8 @@ cdef class Multiple:
     cpdef Randomize(self):
         self.m = MakeCMultiple()
         return self
-    cpdef Point transform(self, Point p):
-        return multipleTransform(self.m, p)
+    cdef Point transform(self, Point p, QuickRandom *r):
+        return multipleTransform(self.m, p, r)
     def TakeApart(self):
         transforms = [('image.png', self)]
         for i in range(self.m.N):
@@ -217,9 +226,12 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
     if t.m.Ntot == 0:
         print 'weird business'
         return h
+    cdef QuickRandom r
+    r.m_w = 1
+    r.m_z = 2
     for i in xrange(400*nx*ny):
         place_point(h, p)
-        p = multipleTransform(t.m, p)
+        p = multipleTransform(t.m, p, &r)
     return h
 
 cpdef np.ndarray[DTYPE_t, ndim=3] get_colors(np.ndarray[DTYPE_t, ndim=3] h):
