@@ -12,7 +12,7 @@ parts = a.TakeApart()
 
 size = 128
 
-for filename, transform in parts:
+for filename, transform in parts[:1]:
     h = FractalTransform.Simulate(transform, FractalTransform.MakePoint(.1,.232332), size, size)
     img = Image.new( 'RGB', (size,size), "black") # create a new black image
     pixels = img.load() # create the pixel map

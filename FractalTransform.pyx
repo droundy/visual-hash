@@ -96,7 +96,7 @@ cdef Fancy MakeFancy():
     cdef Fancy f
     f.a = MakeAffine()
     f.spiralness = random.gauss(0, 3)
-    f.radius = random.gauss(sqrt(2)/2, sqrt(2)/2/2)
+    f.radius = random.gauss(.3, .1)
     f.bounciness = random.gauss(2, 2)
     f.bumps = random.randint(1, 4)
     return f
@@ -109,8 +109,6 @@ cdef Point fancyTransform(Fancy f, Point p):
     cdef double maxrad = f.radius*(1+f.bounciness*sin(theta*f.bumps))
     nex.x = maxrad*sin(r/maxrad)*sin(theta + f.spiralness*r)
     nex.y = maxrad*sin(r/maxrad)*cos(theta + f.spiralness*r)
-    nex.x = sin(nex.x)
-    nex.y = sin(nex.y)
     return nex
 
 def fancyFilename(Fancy f):
@@ -160,7 +158,7 @@ cdef Point symmetryTransform(Symmetry s, Point p):
     p.y += s.a.Oy
     return p
 
-cdef int Ntransform = 4
+cdef int Ntransform = 10
 cdef struct CMultiple:
     Fancy t[10]
     Symmetry s
@@ -202,8 +200,8 @@ cdef class Multiple:
         return transforms
 
 cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p):
-    cdef int ix = <int>((p.x+1)/2*h.shape[1])
-    cdef int iy = <int>((p.y+1)/2*h.shape[2])
+    cdef int ix = <int>((sin(p.x)+1)/2*h.shape[1])
+    cdef int iy = <int>((sin(p.y)+1)/2*h.shape[2])
     h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
     h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
     h[2, ix % h.shape[1], iy % h.shape[2]] += p.G
