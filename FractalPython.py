@@ -1,13 +1,31 @@
 #!/usr/bin/python2
 
 from PIL import Image
-import random
-#random.seed(0)
 
 import pyximport; pyximport.install()
 import FractalTransform
 
-a = FractalTransform.Multiple().Randomize()
+import random, struct
+from Crypto.Hash import SHA512 as _hash
+
+class StrongRandom(random.Random):
+    def __init__(self, string):
+        self.string = string
+        self.hash = _hash.new(string).digest()
+        self.bits = _hash.new(string).digest()
+        self.gauss_next = None
+    def random(self):
+        fmt = '<L'
+        N = struct.calcsize(fmt)
+        if len(self.bits) < N:
+            self.bits += _hash.new(self.hash).digest()
+            self.hash = _hash.new(self.hash).digest()
+        val = struct.unpack('<L', self.bits[:N])[0]
+        self.bits = self.bits[N:]
+        return val/(2.0**32)
+
+
+a = FractalTransform.Multiple().Randomize(StrongRandom('Hello world'))
 parts = a.TakeApart()
 
 size = 128

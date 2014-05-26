@@ -1,8 +1,6 @@
 #cython: nonecheck=True
 #        ^^^ Turns on nonecheck globally
 
-import random
-
 from libc.math cimport log, sqrt, cos, sin, atan2
 from cython cimport view
 
@@ -37,7 +35,7 @@ def MakePoint(x, y):
 cdef struct ColorTransform:
     double R, G, B, A
 
-cdef ColorTransform MakeColorTransform():
+cdef ColorTransform MakeColorTransform(random):
     cdef ColorTransform out
     out.A = 1
     out.R = random.uniform(0,1)
@@ -65,9 +63,9 @@ cdef struct Affine:
     double compressme, theta
     double Mxx, Mxy, Myx, Myy, Ox, Oy
 
-cdef Affine MakeAffine():
+cdef Affine MakeAffine(random):
     cdef Affine a
-    a.c = MakeColorTransform()
+    a.c = MakeColorTransform(random)
     # currently we always initialize pseudorandomly, but
     # eventually we'll want to generate this deterministically.
     a.theta = random.uniform(0, 2*np.pi)
@@ -101,9 +99,9 @@ cdef struct Fancy:
     double spiralness, radius, bounciness
     int bumps
 
-cdef Fancy MakeFancy():
+cdef Fancy MakeFancy(random):
     cdef Fancy f
-    f.a = MakeAffine()
+    f.a = MakeAffine(random)
     f.spiralness = random.gauss(0, 3)
     f.radius = random.gauss(.4, .2)
     f.bounciness = random.gauss(2, 2)
@@ -127,12 +125,12 @@ cdef struct Symmetry:
     Affine a
     int Nsym
 
-cdef Symmetry MakeSymmetry():
+cdef Symmetry MakeSymmetry(random):
     cdef Symmetry s
-    s.a = MakeAffine()
     cdef double theta = random.uniform(0, 2*np.pi)
-    s.a.Ox /= 3
-    s.a.Oy /= 3
+    cdef double translation_scale = 0.3
+    s.a.Ox = random.gauss(0, translation_scale)
+    s.a.Oy = random.gauss(0, translation_scale)
     cdef double nnn = random.expovariate(1.0/4)
     s.Nsym = 1 + <int>nnn
     if s.Nsym == 1 and random.randint(0,1) == 0:
@@ -173,16 +171,18 @@ cdef struct CMultiple:
     Symmetry s
     int N
     int Ntot
+    double roundedness
 
-cdef CMultiple MakeCMultiple():
+cdef CMultiple MakeCMultiple(random):
     cdef CMultiple m
-    m.s = MakeSymmetry()
+    m.roundedness = random.uniform(0, 1)
+    m.s = MakeSymmetry(random)
     m.N = Ntransform - m.s.Nsym
     if m.N < 5:
         m.N = 5
     cdef int i
     for i in range(m.N):
-        m.t[i] = MakeFancy()
+        m.t[i] = MakeFancy(random)
     m.t[0].a.c.R = 0
     m.t[0].a.c.G = 0
     m.t[0].a.c.B = 0
@@ -197,8 +197,8 @@ cdef Point multipleTransform(CMultiple m, Point p, QuickRandom *r):
 
 cdef class Multiple:
     cdef CMultiple m
-    cpdef Randomize(self):
-        self.m = MakeCMultiple()
+    cpdef Randomize(self, random):
+        self.m = MakeCMultiple(random)
         return self
     cdef Point transform(self, Point p, QuickRandom *r):
         return multipleTransform(self.m, p, r)
@@ -212,9 +212,9 @@ cdef class Multiple:
             transforms.append((fancyFilename(foo.m.t[0]), foo))
         return transforms
 
-cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p):
-    cdef int ix = <int>((p.x/sqrt(p.x**2 + 0.25*p.y**2 + 1)+1)/2*h.shape[1])
-    cdef int iy = <int>((p.y/sqrt(p.y**2 + 0.25*p.x**2 + 1)+1)/2*h.shape[2])
+cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p, double roundedness):
+    cdef int ix = <int>((p.x/sqrt(p.x**2 + roundedness*p.y**2 + 1)+1)/2*h.shape[1])
+    cdef int iy = <int>((p.y/sqrt(p.y**2 + roundedness*p.x**2 + 1)+1)/2*h.shape[2])
     h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
     h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
     h[2, ix % h.shape[1], iy % h.shape[2]] += p.G
@@ -230,7 +230,7 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
     r.m_w = 1
     r.m_z = 2
     for i in xrange(400*nx*ny):
-        place_point(h, p)
+        place_point(h, p, t.m.roundedness)
         p = multipleTransform(t.m, p, &r)
     return h
 
