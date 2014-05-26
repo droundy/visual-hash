@@ -96,7 +96,7 @@ cdef Fancy MakeFancy():
     cdef Fancy f
     f.a = MakeAffine()
     f.spiralness = random.gauss(0, 3)
-    f.radius = random.gauss(.3, .1)
+    f.radius = random.gauss(.4, .2)
     f.bounciness = random.gauss(2, 2)
     f.bumps = random.randint(1, 4)
     return f
@@ -158,22 +158,25 @@ cdef Point symmetryTransform(Symmetry s, Point p):
     p.y += s.a.Oy
     return p
 
-cdef int Ntransform = 10
+DEF Ntransform = 10
 cdef struct CMultiple:
-    Fancy t[10]
+    Fancy t[Ntransform]
     Symmetry s
     int N
     int Ntot
 
-cdef CMultiple MakeMultiple():
+cdef CMultiple MakeCMultiple():
     cdef CMultiple m
     m.s = MakeSymmetry()
     m.N = Ntransform - m.s.Nsym
-    if m.N < 4:
-        m.N = 4
+    if m.N < 5:
+        m.N = 5
     cdef int i
     for i in range(m.N):
         m.t[i] = MakeFancy()
+    m.t[0].a.c.R = 0
+    m.t[0].a.c.G = 0
+    m.t[0].a.c.B = 0
     m.Ntot = m.N*m.s.Nsym
     return m
 
@@ -185,8 +188,9 @@ cdef Point multipleTransform(CMultiple m, Point p):
 
 cdef class Multiple:
     cdef CMultiple m
-    def __cinit__(self):
-        self.m = MakeMultiple()
+    cpdef Randomize(self):
+        self.m = MakeCMultiple()
+        return self
     cpdef Point transform(self, Point p):
         return multipleTransform(self.m, p)
     def TakeApart(self):
@@ -200,8 +204,8 @@ cdef class Multiple:
         return transforms
 
 cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p):
-    cdef int ix = <int>((sin(p.x)+1)/2*h.shape[1])
-    cdef int iy = <int>((sin(p.y)+1)/2*h.shape[2])
+    cdef int ix = <int>((p.x/sqrt(p.x**2 + 0.25*p.y**2 + 1)+1)/2*h.shape[1])
+    cdef int iy = <int>((p.y/sqrt(p.y**2 + 0.25*p.x**2 + 1)+1)/2*h.shape[2])
     h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
     h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
     h[2, ix % h.shape[1], iy % h.shape[2]] += p.G

@@ -7,7 +7,7 @@ import random
 import pyximport; pyximport.install()
 import FractalTransform
 
-a = FractalTransform.Multiple()
+a = FractalTransform.Multiple().Randomize()
 parts = a.TakeApart()
 
 size = 128
