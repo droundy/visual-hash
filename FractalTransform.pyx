@@ -212,9 +212,11 @@ cdef class Multiple:
             transforms.append((fancyFilename(foo.m.t[0]), foo))
         return transforms
 
-cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p, double roundedness):
-    cdef int ix = <int>((p.x/sqrt(p.x**2 + roundedness*p.y**2 + 1)+1)/2*h.shape[1])
-    cdef int iy = <int>((p.y/sqrt(p.y**2 + roundedness*p.x**2 + 1)+1)/2*h.shape[2])
+cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p, double roundedness, double scaleup):
+    cdef double x = p.x*scaleup
+    cdef double y = p.y*scaleup
+    cdef int ix = <int>((x/sqrt(x**2 + roundedness*y**2 + 1)+1)/2*h.shape[1])
+    cdef int iy = <int>((y/sqrt(y**2 + roundedness*x**2 + 1)+1)/2*h.shape[2])
     h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
     h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
     h[2, ix % h.shape[1], iy % h.shape[2]] += p.G
@@ -227,15 +229,32 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
         print 'weird business'
         return h
     cdef QuickRandom r
+    cdef double scale_up_by = 1.0
     r.m_w = 1
     r.m_z = 2
+    for i in xrange(4*nx*ny):
+        place_point(h, p, t.m.roundedness, scale_up_by)
+        p = multipleTransform(t.m, p, &r)
+    cdef double meandist = 0
+    cdef double norm = 0
+    cdef double xx, yy
+    for i in range(h.shape[1]):
+        xx = (i - h.shape[1]/2.0)/(h.shape[1]/2.0)
+        for j in range(h.shape[2]):
+            yy = (j - h.shape[2]/2.0)/(h.shape[2]/2.0)
+            norm += h[0, i, j]
+            meandist += h[0, i, j]*sqrt(xx**2 + yy**2)
+            h[:,i,j] = 0
+    meandist /= norm
+    print 'meandist is', meandist
+    scale_up_by = 1.0/meandist
     for i in xrange(400*nx*ny):
-        place_point(h, p, t.m.roundedness)
+        place_point(h, p, t.m.roundedness, scale_up_by)
         p = multipleTransform(t.m, p, &r)
     return h
 
 cpdef np.ndarray[DTYPE_t, ndim=3] get_colors(np.ndarray[DTYPE_t, ndim=3] h):
-    cdef np.ndarray[DTYPE_t, ndim=3] img = np.zeros([3, h.shape[1], h.shape[2]], dtype=DTYPE)
+    cdef np.ndarray[DTYPE_t, ndim=3] img = np.zeros([4, h.shape[1], h.shape[2]], dtype=DTYPE)
     cdef DTYPE_t maxa = 0
     cdef DTYPE_t mean_nonzero_a = 0
     cdef int num_nonzero = 0
@@ -257,7 +276,24 @@ cpdef np.ndarray[DTYPE_t, ndim=3] get_colors(np.ndarray[DTYPE_t, ndim=3] h):
         for j in xrange(h.shape[2]):
             if h[0,i,j] > 0:
                 a = norm*log(factor*h[0,i,j]);
+                img[3,i,j] = 1
                 img[0,i,j] = h[1,i,j]/h[0,i,j]*a
                 img[1,i,j] = h[2,i,j]/h[0,i,j]*a
                 img[2,i,j] = h[3,i,j]/h[0,i,j]*a
+            else:
+                img[3,i,j] = 0
+    for i in xrange(h.shape[1]):
+        for j in xrange(h.shape[2]):
+            if img[3,i,j] == 0:
+                blackrad = 2.0
+                for di in xrange(-int(blackrad),int(blackrad)+1,1):
+                    ii = i + di
+                    if ii >= 0 and ii < h.shape[1]:
+                        djmax = int(np.sqrt((blackrad+.5)**2 - di**2))
+                        for dj in xrange(-djmax,djmax+1,1):
+                            jj = j + dj
+                            d = np.sqrt(di**2 + dj**2)
+                            if jj >= 0 and jj < h.shape[2] and h[3,ii,jj] > 0:
+                                v = (1.0 + blackrad - d)/blackrad
+                                img[3,i,j] = max(img[3,i,j], v)
     return img
