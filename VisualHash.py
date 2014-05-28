@@ -24,13 +24,12 @@ class StrongRandom(random.Random):
         self.bits = self.bits[N:]
         return val/(2.0**32)
 
-
-a = FractalTransform.Multiple().Randomize(StrongRandom('Hello world'))
-parts = a.TakeApart()
-
-size = 128
-
-for filename, transform in parts[:1]:
+def Hash(string, size = 128):
+    """
+    Given a string (and optionally a size in pixels) return a PIL
+    Image that is a strong cryptographic hash of the string.
+    """
+    transform = FractalTransform.Multiple().Randomize(StrongRandom(string))
     h = FractalTransform.Simulate(transform, FractalTransform.MakePoint(.1,.232332), size, size)
     img = Image.new( 'RGBA', (size,size), "black") # create a new black image
     pixels = img.load() # create the pixel map
@@ -42,7 +41,12 @@ for filename, transform in parts[:1]:
                            int(256*colors[1,i,j]),
                            int(256*colors[2,i,j]),
                            int(256*colors[3,i,j])) # set the colour accordingly
+    return img
 
-    img.save(filename)
-#img.show()
 
+def Flag(string, size = 128):
+    """
+    The "flag" visual hash.
+    """
+    img = Image.new( 'RGBA', (size,size), "black") # create a new black image
+    return img
