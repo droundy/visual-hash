@@ -65,8 +65,8 @@
 # For more information and further discussion, see http://math.andrej.com/category/random-art/
 
 import math
-import random
-from Tkinter import * # Change "Tkinter" to "tkinter" in Python 3
+
+import Image
 
 # Utility functions
 
@@ -245,7 +245,7 @@ operators1 = [op for op in operators if op.arity > 0]
 
 def generate(k = 50):
     '''Randonly generate an expession of a given size.'''
-    if k <= 0: 
+    if k <= 0:
         # We used up available size, generate a leaf of the expression tree
         op = random.choice(operators0)
         return op()
@@ -302,7 +302,25 @@ class Art():
         else:
             self.draw_alarm = None
 
-# Main program
-win = Tk()
-arg = Art(win)
-win.mainloop()
+def Create(random_input, size = 128):
+    """
+    Given a string (and optionally a size in pixels) return a PIL
+    Image that is a random art based on a cryptographic hash of the
+    string.
+    """
+    global random
+    random = random_input
+    art = generate(random.randrange(20,150))
+    img = Image.new( 'RGBA', (size,size), "black") # create a new black image
+    pixels = img.load() # create the pixel map
+
+    for i in range(img.size[0]):    # for every pixel:
+        for j in range(img.size[1]):
+            x = float(2*i)/img.size[0] - 1.0
+            y = float(2*j)/img.size[1] - 1.0
+            (r,g,b) = art.eval(x,y)
+            pixels[i,j] = (int(256*r),
+                           int(256*g),
+                           int(256*b),
+                           255) # set the colour accordingly
+    return img

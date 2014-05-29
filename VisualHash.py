@@ -5,6 +5,7 @@ from PIL import Image
 import pyximport; pyximport.install()
 import FractalTransform
 from internal import identicon
+from internal import randomart
 
 import random, struct
 from Crypto.Hash import SHA512 as _hash
@@ -58,4 +59,9 @@ def Identicon(string, size = 128):
     random = StrongRandom(string)
     code = random.random32()
     img = identicon.render_identicon(code, int(size/3))
+    return img
+
+def RandomArt(string, size = 128):
+    random = StrongRandom(string)
+    img = randomart.Create(random, size)
     return img
