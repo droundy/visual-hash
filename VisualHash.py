@@ -4,6 +4,7 @@ from PIL import Image
 
 import pyximport; pyximport.install()
 import FractalTransform
+from internal import identicon
 
 import random, struct
 from Crypto.Hash import SHA512 as _hash
@@ -14,7 +15,7 @@ class StrongRandom(random.Random):
         self.hash = _hash.new(string).digest()
         self.bits = _hash.new(string).digest()
         self.gauss_next = None
-    def random(self):
+    def random32(self):
         fmt = '<L'
         N = struct.calcsize(fmt)
         if len(self.bits) < N:
@@ -22,7 +23,9 @@ class StrongRandom(random.Random):
             self.hash = _hash.new(self.hash).digest()
         val = struct.unpack('<L', self.bits[:N])[0]
         self.bits = self.bits[N:]
-        return val/(2.0**32)
+        return val
+    def random(self):
+        return self.random32()/(2.0**32)
 
 def Hash(string, size = 128):
     """
@@ -49,4 +52,10 @@ def Flag(string, size = 128):
     The "flag" visual hash.
     """
     img = Image.new( 'RGBA', (size,size), "black") # create a new black image
+    return img
+
+def Identicon(string, size = 128):
+    random = StrongRandom(string)
+    code = random.random32()
+    img = identicon.render_identicon(code, int(size/3))
     return img
