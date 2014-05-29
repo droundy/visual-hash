@@ -28,6 +28,21 @@ class StrongRandom(random.Random):
     def random(self):
         return self.random32()/(2.0**32)
 
+class TweakedRandom(random.Random):
+    def __init__(self, string, fraction, myseed):
+        self._random = StrongRandom(string)
+        self.fraction = fraction
+        self.tweaker = StrongRandom(str(myseed))
+        self.gauss_next = None
+    def random32(self):
+        r = self._random.random32()
+        for i in range(32):
+            if self.tweaker.random() < self.fraction:
+                r ^= (1 << i)
+        return r
+    def random(self):
+        return self.random32()/(2.0**32)
+
 def Hash(string, size = 128):
     """
     Given a string (and optionally a size in pixels) return a PIL
@@ -63,5 +78,6 @@ def Identicon(string, size = 128):
 
 def RandomArt(string, size = 128):
     random = StrongRandom(string)
+    random = TweakedRandom(string, fraction = 0.1, myseed = 2)
     img = randomart.Create(random, size)
     return img
