@@ -1,2 +1,2 @@
-visual-hash
 Cython
+visual-hash
