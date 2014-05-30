@@ -13,6 +13,9 @@ def read(fname):
 
 setup(
     packages = ['VisualHashPrivate'],
+    install_requires = [
+        "Cython",
+        ],
     py_modules = ['VisualHash'],
     ext_modules = cythonize("VisualHashPrivate/FractalTransform.pyx"),
     license = "BSD",
