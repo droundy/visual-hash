@@ -12,10 +12,11 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
+    packages = ['VisualHashPrivate'],
     py_modules = ['VisualHash'],
-    ext_modules = cythonize("FractalTransform.pyx"),
+    ext_modules = cythonize("VisualHashPrivate/FractalTransform.pyx"),
     license = "BSD",
-    name = "visual hash",
+    name = "visual-hash",
     version = "0.0.0",
     author = "David Roundy",
     author_email = "daveroundy@gmail.com",
