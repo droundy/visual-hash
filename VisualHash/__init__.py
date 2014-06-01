@@ -74,11 +74,9 @@ class TweakedRandom(random.Random):
         self.gauss_next = None
     def random32(self):
         """Generate a random 32-bit integer."""
-        r = self._random.random32()
-        for i in range(32):
-            if self.tweaker.random() < self.fraction:
-                r ^= (1 << i)
-        return r
+        if self.tweaker.random() < self.fraction:
+            return self.tweaker.random32()
+        return self._random.random32()
     def random(self):
         """ Generate a random floating point number in [0,1)."""
         return self.random32()/(2.0**32)

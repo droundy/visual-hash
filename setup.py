@@ -18,7 +18,7 @@ def read(fname):
 setup(
     packages = find_packages(),
     install_requires = [
-        "Cython",
+        "Cython", 'pycrypto'
         ],
     setup_requires = [
         "Cython",
@@ -27,7 +27,7 @@ setup(
     ext_modules = cythonize("VisualHashPrivate/FractalTransform.pyx"),
     license = "BSD",
     name = "visual-hash",
-    version = "0.0.0.8",
+    version = "0.0.0.9",
     url = "https://github.com/droundy/visual-hash",
     author = "David Roundy",
     author_email = "daveroundy@gmail.com",
