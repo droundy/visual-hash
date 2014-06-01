@@ -1,7 +1,11 @@
 #!/usr/bin/python
 
-from distutils.core import setup
-from Cython.Build import cythonize
+from distutils.core import setup, Extension
+try:
+    from Cython.Build import cythonize
+except:
+    def cythonize(x):
+        return [Extension(x[:-4], [x[:-4]+'.c'])]
 import os
 
 # Utility function to read the README file.
@@ -26,6 +30,7 @@ setup(
     author_email = "daveroundy@gmail.com",
     description = ("A package to generate visual hashes."),
     long_description=read('README.md'),
+    data_files=['README.md'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: BSD License",
