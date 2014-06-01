@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from distutils.core import setup, Extension
+from setuptools import setup, find_packages, Extension
 try:
     from Cython.Build import cythonize
 except:
@@ -16,21 +16,24 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    packages = ['VisualHashPrivate'],
+    packages = find_packages(),
     install_requires = [
+        "Cython",
+        ],
+    setup_requires = [
         "Cython",
         ],
     py_modules = ['VisualHash'],
     ext_modules = cythonize("VisualHashPrivate/FractalTransform.pyx"),
     license = "BSD",
     name = "visual-hash",
-    version = "0.0.0.3",
+    version = "0.0.0.8",
     url = "https://github.com/droundy/visual-hash",
     author = "David Roundy",
     author_email = "daveroundy@gmail.com",
     description = ("A package to generate visual hashes."),
-    long_description=read('README.md'),
-    data_files=['README.md'],
+    long_description=read('README'),
+    package_data={'': ['*.md']},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: BSD License",
