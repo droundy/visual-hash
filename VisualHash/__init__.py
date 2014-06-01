@@ -81,6 +81,57 @@ class TweakedRandom(random.Random):
         """ Generate a random floating point number in [0,1)."""
         return self.random32()/(2.0**32)
 
+def _xyz2rgb(x, y, z):
+    # the following conversion from XYZ to sRGB comes from
+    # http://en.wikipedia.org/wiki/SRGB
+    r =  3.2406*x - 1.5372*y - 0.4986*z
+    g = -0.9689*x + 1.8758*y + 0.0415*z
+    b =  0.0557*x - 0.2040*y + 1.0570*z
+    return r, b, g
+
+def _lab2xyz(L, a, b):
+    def finverse(t):
+        if t < 6.0/29:
+            return t**3
+        return 3*(6.0/29)**3*(t-4.0/29)
+    Y = 100*finverse((L+16.0)/116)
+    X = 100*finverse((L+16.0)/116 + a/500.0)
+    Z = 100*finverse((L+16.0)/116 - b/200.0)
+    return X, Y, Z
+
+def _color(random):
+    h = 6*random.random()
+    saturation = random.random()**.5
+    value = random.random()
+    cutoff = 0.4
+    power = 0.25
+    if value < cutoff:
+        value = cutoff*(value/cutoff)**power
+    if value > 1.0 - cutoff:
+        value = (1.0-cutoff) + cutoff*(value - (1.0 - cutoff))**power
+    c = saturation*value
+    x = c*(1-(h % 2 - 1))
+    if h < 1:
+        r, g, b = c, x, 0
+    elif h < 2:
+        r, g, b = x, c, 0
+    elif h < 3:
+        r, g, b = 0, c, x
+    elif h < 4:
+        r, g, b = 0, x, c
+    elif h < 5:
+        r, g, b = x, 0, c
+    else:
+        r, g, b = c, 0, x
+    m = value - c
+    r = r + m
+    g = g + m
+    b = b + m
+    print 'm', m
+    print 'hsv', h, saturation, value
+    print 'rgb', r, g, b
+    return int(256*r), int(256*g), int(256*b)
+
 def Fractal(random = StrongRandom(""), size = 128):
     """
     Create a hash as a fractal flame.
@@ -102,7 +153,6 @@ def Fractal(random = StrongRandom(""), size = 128):
                            int(256*colors[3,i,j])) # set the colour accordingly
     return img
 
-
 def Flag(random = StrongRandom(""), size = 128):
     """
     Create a hash using the "flag" algorithm.
@@ -111,6 +161,43 @@ def Flag(random = StrongRandom(""), size = 128):
     Image that is a strong cryptographic hash of the string.
     """
     img = Image.new( 'RGBA', (size,size), "black") # create a new black image
+    pixels = img.load() # create the pixel map
+    ncolors = 4
+    r = [0]*ncolors
+    g = [0]*ncolors
+    b = [0]*ncolors
+    for i in range(ncolors):
+        r[i] = int(256*random.random())
+        g[i] = int(256*random.random())
+        b[i] = int(256*random.random())
+    for i in range(img.size[0]):    # for every pixel:
+        for j in range(img.size[1]):
+            n = (i*ncolors) // img.size[0]
+            pixels[i,j] = (r[n], g[n], b[n], 255) # set the colour accordingly
+    return img
+
+def TFlag(random = StrongRandom(""), size = 128):
+    """
+    Create a hash using the "flag" algorithm.
+
+    Given a string (and optionally a size in pixels) return a PIL
+    Image that is a strong cryptographic hash of the string.
+    """
+    img = Image.new( 'RGBA', (size,size), "black") # create a new black image
+    pixels = img.load() # create the pixel map
+    ncolors = 16*4
+    r = [0]*ncolors
+    g = [0]*ncolors
+    b = [0]*ncolors
+    for i in range(ncolors):
+        r[i], g[i], b[i] = _color(random)
+        print r[i], g[i], b[i]
+    for i in range(img.size[0]):    # for every pixel:
+        for j in range(img.size[1]):
+            nx = (2*i) // img.size[0]
+            ny = (j*ncolors//4) // img.size[1]
+            n = nx+2*ny
+            pixels[i,j] = (r[n], g[n], b[n], 255) # set the colour accordingly
     return img
 
 def Identicon(random = StrongRandom(""), size = 128):
