@@ -10,6 +10,7 @@ strong visual hash of an arbitrary string.
 from PIL import Image
 
 import pyximport; pyximport.install()
+from VisualHashPrivate.FractalTransform import DistinctColor
 from VisualHashPrivate import FractalTransform
 from VisualHashPrivate import identicon
 from VisualHashPrivate import randomart
@@ -81,36 +82,6 @@ class TweakedRandom(random.Random):
         """ Generate a random floating point number in [0,1)."""
         return self.random32()/(2.0**32)
 
-def _color(random):
-    h = 6*random.random()
-    saturation = random.random()**.5
-    value = random.random()
-    cutoff = 0.4
-    power = 0.25
-    if value < cutoff:
-        value = cutoff*(value/cutoff)**power
-    if value > 1.0 - cutoff:
-        value = (1.0-cutoff) + cutoff*(value - (1.0 - cutoff))**power
-    c = saturation*value
-    x = c*(1-(h % 2 - 1))
-    if h < 1:
-        r, g, b = c, x, 0
-    elif h < 2:
-        r, g, b = x, c, 0
-    elif h < 3:
-        r, g, b = 0, c, x
-    elif h < 4:
-        r, g, b = 0, x, c
-    elif h < 5:
-        r, g, b = x, 0, c
-    else:
-        r, g, b = c, 0, x
-    m = value - c
-    r = r + m
-    g = g + m
-    b = b + m
-    return int(256*r), int(256*g), int(256*b)
-
 def Fractal(random = StrongRandom(""), size = 128):
     """
     Create a hash as a fractal flame.
@@ -146,9 +117,7 @@ def Flag(random = StrongRandom(""), size = 128):
     g = [0]*ncolors
     b = [0]*ncolors
     for i in range(ncolors):
-        r[i] = int(256*random.random())
-        g[i] = int(256*random.random())
-        b[i] = int(256*random.random())
+        r[i], g[i], b[i] = DistinctColor(random)
     for i in range(img.size[0]):    # for every pixel:
         for j in range(img.size[1]):
             n = (i*ncolors) // img.size[0]
@@ -169,7 +138,7 @@ def TFlag(random = StrongRandom(""), size = 128):
     g = [0]*ncolors
     b = [0]*ncolors
     for i in range(ncolors):
-        r[i], g[i], b[i] = _color(random)
+        r[i], g[i], b[i] = DistinctColor(random)
     for i in range(img.size[0]):    # for every pixel:
         for j in range(img.size[1]):
             nx = (2*i) // img.size[0]
