@@ -81,24 +81,6 @@ class TweakedRandom(random.Random):
         """ Generate a random floating point number in [0,1)."""
         return self.random32()/(2.0**32)
 
-def _xyz2rgb(x, y, z):
-    # the following conversion from XYZ to sRGB comes from
-    # http://en.wikipedia.org/wiki/SRGB
-    r =  3.2406*x - 1.5372*y - 0.4986*z
-    g = -0.9689*x + 1.8758*y + 0.0415*z
-    b =  0.0557*x - 0.2040*y + 1.0570*z
-    return r, b, g
-
-def _lab2xyz(L, a, b):
-    def finverse(t):
-        if t < 6.0/29:
-            return t**3
-        return 3*(6.0/29)**3*(t-4.0/29)
-    Y = 100*finverse((L+16.0)/116)
-    X = 100*finverse((L+16.0)/116 + a/500.0)
-    Z = 100*finverse((L+16.0)/116 - b/200.0)
-    return X, Y, Z
-
 def _color(random):
     h = 6*random.random()
     saturation = random.random()**.5
@@ -127,9 +109,6 @@ def _color(random):
     r = r + m
     g = g + m
     b = b + m
-    print 'm', m
-    print 'hsv', h, saturation, value
-    print 'rgb', r, g, b
     return int(256*r), int(256*g), int(256*b)
 
 def Fractal(random = StrongRandom(""), size = 128):
@@ -185,13 +164,12 @@ def TFlag(random = StrongRandom(""), size = 128):
     """
     img = Image.new( 'RGBA', (size,size), "black") # create a new black image
     pixels = img.load() # create the pixel map
-    ncolors = 16*4
+    ncolors = 16
     r = [0]*ncolors
     g = [0]*ncolors
     b = [0]*ncolors
     for i in range(ncolors):
         r[i], g[i], b[i] = _color(random)
-        print r[i], g[i], b[i]
     for i in range(img.size[0]):    # for every pixel:
         for j in range(img.size[1]):
             nx = (2*i) // img.size[0]
