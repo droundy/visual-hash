@@ -103,7 +103,7 @@ cdef Affine MakeAffine(random):
     a.c = MakeColorTransform(random)
     # currently we always initialize pseudorandomly, but
     # eventually we'll want to generate this deterministically.
-    a.theta = random.uniform(0, 2*np.pi)
+    a.theta = 2*np.pi*random.random()
     rot = np.matrix([[cos(a.theta), sin(a.theta)],
                      [-sin(a.theta),cos(a.theta)]])
     a.compressme = random.gauss(0.8, 0.2)
@@ -162,7 +162,7 @@ cdef struct Symmetry:
 
 cdef Symmetry MakeSymmetry(random):
     cdef Symmetry s
-    cdef double theta = random.uniform(0, 2*np.pi)
+    cdef double theta = 2*np.pi*random.random()
     cdef double translation_scale = 0.3
     s.a.Ox = random.gauss(0, translation_scale)
     s.a.Oy = random.gauss(0, translation_scale)
@@ -171,7 +171,7 @@ cdef Symmetry MakeSymmetry(random):
     if s.Nsym == 1 and random.randint(0,1) == 0:
         print 'Mirror plane'
         s.Nsym = 2
-        theta = random.uniform(0, 2*np.pi)
+        theta = 2*np.pi*random.random()
         vx = sin(theta)
         vy = cos(theta)
         s.a.Mxx = vx
@@ -210,7 +210,7 @@ cdef struct CMultiple:
 
 cdef CMultiple MakeCMultiple(random):
     cdef CMultiple m
-    m.roundedness = random.uniform(0, 1)
+    m.roundedness = random.random()
     m.s = MakeSymmetry(random)
     m.N = Ntransform - m.s.Nsym
     if m.N < 5:

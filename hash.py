@@ -1,11 +1,27 @@
 #!/usr/bin/python2
 
 import VisualHash
+import time
 
-#img = VisualHash.Identicon('Hello world', 128)
-img = VisualHash.RandomArt(VisualHash.StrongRandom('Hello world'), 128)
-img = VisualHash.TFlag(VisualHash.StrongRandom('Hello world'), 128)
-img = VisualHash.Fractal(VisualHash.StrongRandom('Hello world6'), 128)
+data = 'Hello world'
+
+myhash = VisualHash.Flag
+myhash = VisualHash.Fractal
+myhash = VisualHash.TFlag
+myhash = VisualHash.Identicon
+myhash = VisualHash.RandomArt
+
+
+img = myhash(VisualHash.StrongRandom(data), 128)
 img.save('image.png')
 #img.show()
+
+
+for i in range(5):
+    for j in range(2):
+        print "\n==========", i, j
+        tweaked = myhash(VisualHash.TweakedRandom(data, 0.01, i, j), 128)
+        #tweaked.show()
+        tweaked.save('tweaked.png')
+        time.sleep(3)
 
