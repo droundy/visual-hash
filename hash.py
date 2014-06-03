@@ -17,11 +17,10 @@ img.save('image.png')
 #img.show()
 
 
-for i in range(5):
-    for j in range(2):
-        print "\n==========", i, j
-        tweaked = myhash(VisualHash.TweakedRandom(data, 0.05, i, j), 128)
-        #tweaked.show()
-        tweaked.save('tweaked.png')
-        time.sleep(3)
+for i in range(10):
+    print "\n==========", i
+    tweaked = myhash(VisualHash.TweakedRandom(data, 0.1, i, i), 128)
+    #tweaked.show()
+    tweaked.save('tweaked.png')
+    time.sleep(3)
 

@@ -166,7 +166,7 @@ cdef Symmetry MakeSymmetry(random):
     cdef double translation_scale = 0.3
     s.a.Ox = random.gauss(0, translation_scale)
     s.a.Oy = random.gauss(0, translation_scale)
-    cdef double nnn = random.expovariate(1.0/4)
+    cdef double nnn = random.expovariate(1.0/2)
     s.Nsym = 1 + <int>nnn
     if s.Nsym == 1 and random.randint(0,1) == 0:
         print 'Mirror plane'
@@ -200,7 +200,7 @@ cdef Point symmetryTransform(Symmetry s, Point p):
     p.y += s.a.Oy
     return p
 
-DEF Ntransform = 10
+DEF Ntransform = 5
 cdef struct CMultiple:
     Fancy t[Ntransform]
     Symmetry s
@@ -218,9 +218,9 @@ cdef CMultiple MakeCMultiple(random):
     cdef int i
     for i in range(m.N):
         m.t[i] = MakeFancy(random)
-    m.t[0].a.c.R = 0
-    m.t[0].a.c.G = 0
-    m.t[0].a.c.B = 0
+    # m.t[0].a.c.R = 0
+    # m.t[0].a.c.G = 0
+    # m.t[0].a.c.B = 0
     m.Ntot = m.N*m.s.Nsym
     return m
 
