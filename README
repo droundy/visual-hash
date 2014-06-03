@@ -5,3 +5,39 @@ A visual hash is an image that is generated from a large string, just
 as an ordinary cryptographic hash is usually represented as a
 hexadecimal string.  The advantage of a visual hash is that it is
 easier for humans to remember and compare.
+
+What makes a hash good enough?
+------------------------------
+
+A good visual hash should have the following properties:
+
+1. A high information content, as measured by its Shannon entropy.
+   This results in a hash that has a low chance of collision.  This
+   provides pre-image resistance, i.e. it makes it difficult to create
+   a second input that results in a hash identical to a given hash.
+
+2. A high minimum self-information.  i.e. the lowest self-information
+   value should be as high as possible.  This property implies the
+   former property, but is itself distinct.  The lowest
+   self-information output is most prone to collisions.  Testing for
+   this property is challenging, more challenging than the mean
+   information content discussed previously.
+
+   A second-best for this property would be to be able to identify
+   hashes that have low self-information.  Of course, if we can
+   reliably identify them, we could (in principle) eliminate them
+   entirely by checking for a low self-information during the hashing
+   process, and trying again when this is encountered.
+
+3. Second pre-image resistance, which means that knowing the hash
+   input, we should not be able to produce a similar (or identical)
+   hash.  We achieve this by using a cryptographic hash as input to
+   our visual hashes, which ensures the second pre-image resistance is
+   identical to the first pre-image resistance.
+
+   In order to generate testable visual hashes, we actually aim for
+   raw algorithms that *lack* second pre-image resistance (which we
+   then add on via the cryptographic hash).  This allows us to more
+   readily explore "similar" images in order to estimate the
+   information content in the visual hash, and thus its first
+   pre-image resistance.
