@@ -16,7 +16,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-
+   estimating-entropy
 
 Indices and tables
 ==================
