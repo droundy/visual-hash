@@ -10,7 +10,8 @@ Self-information
 
 The **self-information** of a given image is given by
 
-\[I(x) = -\log_2 P(x)\]
+.. math::
+   I(x) = -\log_2 P(x)
 
-where $P(x)$ is the probability
+where :math:`P(x)` is the probability
 
