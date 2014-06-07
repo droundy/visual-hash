@@ -36,19 +36,92 @@ given by
 
 .. math::
    P = p^N
+   :label: P
 
 If, however, we only change a fraction :math:`f` of the inputs
 (i.e. random numbers) then the probability will be
 
 .. math::
-   P(f) = p^{f N}
+   P(f) = \left(1 - f(1 - p)\right)^N
+
+   = \left(1 - f + fp\right)^N
+
+This comes from the probability :math:`f(1-p)` that the image will
+change due to a single number changing.  Since any one of :math:`N`
+numbers could change in this way, the probability of the image *not*
+changing is as specified in the formula above.  Note that if
+:math:`f=1` this formula reduces to equation :eq:`P`.
 
 Now if we measure this probability for a given :math:`f`, we are
 unable to reconsttruct :math:`P(f=1)`, but if we measure this function
-for a range of :math:`f`, then we can plot the log of :math:`P(f)`:
+for a range of :math:`f`, then we should be able to extract both
+:math:`p` and :math:`N`.
+
+If we consider the limit of :math:`f\ll 1`, we can keep just the first
+term in a power series expansion.
 
 .. math::
-   \log_2 P(f) = f N \log_2 p
+   P(f) = 1 - Nf(1-p) + \frac{N(N-1)f^2(1-p)^2}{2} + \mathcal{O}(f^3)
 
-which tells us that the resulting plot should be a straight line, and
-its slope is :math:`\log_2 P(1)`.
+Thus, if we can measure the first two derivatives of :math:`P(f)`, we
+could in principle measure :math:`N` and :math:`1-p` separately.  But
+that seems dubious, since :math:`N` is likely a large number, so
+:math:`N(N-1) \approx N^2`, which would make the first and second
+derivatives of :math:`P(f)` redundant.
+
+Another measure we could use is the "half-way" point
+:math:`f_{\frac12}`, defined by:
+
+.. math::
+   P(f_{\frac12}) = \frac12 = \left(1 - f_{\frac12}(1 - p)\right)^N
+
+Solving this equation, we find that:
+
+.. math::
+   f_{\frac12} = \frac{1 - 2^{-\frac1N}}{1-p}
+
+Combining this with the initial slope
+
+.. math::
+   f_0' = -N(1-p),
+
+we find that
+
+.. math::
+   f_0' f_{\frac12} = -N\left( 1 - 2^{-\frac1N}\right)
+
+which is a nonlinear equation we can solve numerically.
+Incidentally, in the limit that :math:`N \gg 1`, it is approximately
+true that
+
+.. math::
+   2^{-\frac1N} \approx 1 - \frac{\ln 2}{N} + \frac12 \frac{\ln 2 ^2}{N^2},
+
+and we can conclude that
+
+.. math::
+   f_0' f_{\frac12} \approx -N\left(1 -1 + \frac{\ln 2}{N} - \frac{\ln 2 ^2}{2N^2}\right)
+   \\
+   = -\ln 2 + \frac{\ln 2^2}{2N}
+
+.. math::
+   N \approx \frac{\ln 2^2}{2 f_0' f_{\frac12} + 2\ln 2}
+   :label: N approx
+
+.. math::
+   1 - p \approx -f_0'\frac{2 f_0' f_{\frac12} + 2\ln 2}{\ln 2^2}
+
+   p \approx 1 + f_0'\frac{2 f_0' f_{\frac12} + 2\ln 2}{\ln 2^2}
+
+which means we can conclude that
+
+.. math::
+   P \approx \left(1 + f_0'\frac{2 f_0' f_{\frac12} + 2\ln 2}{\ln
+   2^2}\right)
+   ^{\frac{\ln 2^2}{2 f_0' f_{\frac12} + 2\ln 2}}
+
+Numerically, we can arrive at a better solution than this, but it
+seems good to have a simple analytic understanding of how our answer
+will work out.  We can naturally check this approximation by
+evaluating equation :eq:`N approx` for :math:`N` to verify that it is
+large.
