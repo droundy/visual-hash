@@ -31,11 +31,15 @@ The visual hash styles supported are:
 
 from PIL import Image
 
-import pyximport; pyximport.install()
-from VisualHashPrivate.FractalTransform import DistinctColor
-from VisualHashPrivate import FractalTransform
+try:
+    import pyximport; pyximport.install()
+except:
+    print '****** There does not seem to be cython available!!! *******'
+
 from VisualHashPrivate import identicon
 from VisualHashPrivate import randomart
+from VisualHashPrivate.FractalTransform import DistinctColor
+from VisualHashPrivate import FractalTransform
 
 # annoying imports to enable "random" duplication without strange
 # __init__ error.

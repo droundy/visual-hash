@@ -27,7 +27,7 @@ setup(
     ext_modules = cythonize("VisualHashPrivate/FractalTransform.pyx"),
     license = "BSD",
     name = "visual-hash",
-    version = "0.0.0.10",
+    version = "0.0.0.12",
     url = "https://github.com/droundy/visual-hash",
     author = "David Roundy",
     author_email = "daveroundy@gmail.com",
