@@ -2,7 +2,6 @@
 #        ^^^ Turns on nonecheck globally
 
 from libc.math cimport log, sqrt, cos, sin, atan2
-from cython cimport view
 
 import numpy as np
 cimport numpy as np
