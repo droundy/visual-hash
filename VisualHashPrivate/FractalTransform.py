@@ -1,38 +1,41 @@
+from __future__ import division
 #cython: nonecheck=True
 #        ^^^ Turns on nonecheck globally
 
 from libc.math cimport log, sqrt, cos, sin, atan2
 
 import numpy as np
-cimport numpy as np
-# We now need to fix a datatype for our arrays. I've used the variable
-# DTYPE for this, which is assigned to the usual NumPy runtime
-# type info object.
-DTYPE = np.double
-# "ctypedef" assigns a corresponding compile-time type to DTYPE_t. For
-# every type in the numpy module there's a corresponding compile-time
-# type with a _t-suffix.
-ctypedef np.double_t DTYPE_t
 
 # QuickRandom is a low-quality random number generator used for the
 # chaos game only.  It should ensure that we always generate an
 # identical image for a given resolution.
-cdef struct QuickRandom:
-  unsigned int m_w, m_z
-cdef unsigned int quickrand32(QuickRandom *s):
+class QuickRandom:
+    m_w = 0
+    m_z = 0
+
+def quickrand32(s):
     s.m_z = 36969 * (s.m_z & 65535) + (s.m_z >> 16)
     s.m_w = 18000 * (s.m_w & 65535) + (s.m_w >> 16)
     return (s.m_z << 16) + s.m_w  # 32-bit result
 
-cdef struct Point:
-    double x, y, R, G, B, A
+class Point:
+    def __init__(self, x,y,R,G,B,A):
+        self.x = x
+        self.y = y
+        self.R = R
+        self.G = G
+        self.B = B
+        self.A = A
 
 def MakePoint(x, y):
-    cdef Point p = Point(x, y, 0,0,0,0)
-    return p
+    return Point(x, y, 0,0,0,0)
 
-cdef struct ColorTransform:
-    double R, G, B, A
+class ColorTransform:
+    def __init__(self, R, G, B, A):
+        self.R = R
+        self.G = G
+        self.B = B
+        self.A = A
 
 def DistinctColorFloat(random):
     h = 6*random.random()
@@ -68,14 +71,13 @@ def DistinctColor(random):
     r, g, b = DistinctColorFloat(random)
     return int(256*r), int(256*g), int(256*b)
 
-cdef ColorTransform MakeColorTransform(random):
-    cdef ColorTransform out
-    out.A = 1
+def MakeColorTransform(random):
+    out = ColorTransform(0, 0, 0, 1)
     out.R, out.G, out.B = DistinctColorFloat(random)
     # out.R = random.uniform(0,1)
     # out.G = random.uniform(0,1)
     # out.B = random.uniform(0,1)
-    cdef double m = out.R
+    m = out.R
     if out.G > m:
         m = out.G
     if out.B > m:
@@ -85,19 +87,26 @@ cdef ColorTransform MakeColorTransform(random):
     out.B /= m
     return out
 
-cdef Point colorTransform(ColorTransform c, Point p):
+def colorTransform(c, p):
     p.R = (c.A*c.R + p.A*p.R)/(c.A + p.A)
     p.G = (c.A*c.G + p.A*p.G)/(c.A + p.A)
     p.B = (c.A*c.B + p.A*p.B)/(c.A + p.A)
     p.A = (c.A+p.A)/2
     return p
 
-cdef struct Affine:
-    ColorTransform c
-    double compressme, theta
-    double Mxx, Mxy, Myx, Myy, Ox, Oy
+class Affine:
+    def __init__(self, compressme, theta, Mxx, Mxy, Myx, Myy, Ox, Oy)
+        self.c = c
+        self.compressme = compressme
+        self.theta = theta
+        self.Mxx = Mxx
+        self.Mxy = Mxy
+        self.Myx = Myx
+        self.Myy = Myy
+        self.Ox = Ox
+        self.Oy = Oy
 
-cdef Affine MakeAffine(random):
+def MakeAffine(random):
     cdef Affine a
     a.c = MakeColorTransform(random)
     # currently we always initialize pseudorandomly, but
