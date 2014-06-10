@@ -9,11 +9,24 @@ myhash = VisualHash.Flag
 myhash = VisualHash.TFlag
 myhash = VisualHash.RandomArt
 myhash = VisualHash.Identicon
+myhash = VisualHash.OldFractal
 myhash = VisualHash.Fractal
 
+use = 'old'
+use = 'new'
+use = 'both'
 
-img = myhash(VisualHash.StrongRandom(data), 128)
-img.save('image.png')
+if use == 'old' or use == 'both':
+    print '\nworking on old fractal'
+    print '======================'
+    img = VisualHash.OldFractal(VisualHash.StrongRandom(data), 128)
+    img.save('oldimage.png')
+
+if use == 'new' or use == 'both':
+    print '\nworking on new fractal'
+    print '======================'
+    img = myhash(VisualHash.StrongRandom(data), 128)
+    img.save('image.png')
 #img.show()
 
 

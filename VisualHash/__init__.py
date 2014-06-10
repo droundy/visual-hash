@@ -40,6 +40,10 @@ from VisualHashPrivate import identicon
 from VisualHashPrivate import randomart
 from VisualHashPrivate.FractalTransform import DistinctColor
 from VisualHashPrivate import FractalTransform
+try:
+    from VisualHashPrivate import OldFractalTransform
+except:
+    print '****** There will be no old fractals!!! *******'
 
 # annoying imports to enable "random" duplication without strange
 # __init__ error.
@@ -170,6 +174,27 @@ def Fractal(random = StrongRandom(""), size = 128):
     img = Image.new( 'RGBA', (size,size), "black") # create a new black image
     pixels = img.load() # create the pixel map
     colors = FractalTransform.get_colors(h)
+
+    for i in range(img.size[0]):    # for every pixel:
+        for j in range(img.size[1]):
+            pixels[i,j] = (int(256*colors[0,i,j]),
+                           int(256*colors[1,i,j]),
+                           int(256*colors[2,i,j]),
+                           int(256*colors[3,i,j])) # set the colour accordingly
+    return img
+
+def OldFractal(random = StrongRandom(""), size = 128):
+    """
+    Create a hash as a fractal flame.
+
+    Given a string (and optionally a size in pixels) return a PIL
+    Image that is a strong cryptographic hash of the string.
+    """
+    transform = OldFractalTransform.Multiple().Randomize(random)
+    h = OldFractalTransform.Simulate(transform, OldFractalTransform.MakePoint(.1,.232332), size, size)
+    img = Image.new( 'RGBA', (size,size), "black") # create a new black image
+    pixels = img.load() # create the pixel map
+    colors = OldFractalTransform.get_colors(h)
 
     for i in range(img.size[0]):    # for every pixel:
         for j in range(img.size[1]):

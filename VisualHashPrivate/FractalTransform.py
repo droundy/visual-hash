@@ -14,11 +14,10 @@ import numpy as np
 class QuickRandom:
     m_w = 1
     m_z = 2
-
-def quickrand32(s):
-    s.m_z = 36969 * (s.m_z & 65535) + (s.m_z >> 16)
-    s.m_w = 18000 * (s.m_w & 65535) + (s.m_w >> 16)
-    return (s.m_z << 16) + s.m_w  # 32-bit result
+    def quickrand32(self):
+        self.m_z = 36969 * (self.m_z & 65535) + (self.m_z >> 16)
+        self.m_w = 18000 * (self.m_w & 65535) + (self.m_w >> 16)
+        return ((self.m_z << 16) + self.m_w) & 0xFFFFFFFF  # 32-bit result
 
 class Point:
     def __init__(self, x,y,R=0,G=0,B=0,A=0):
@@ -28,6 +27,14 @@ class Point:
         self.G = G
         self.B = B
         self.A = A
+    def __str__(self):
+        return str({'A': self.A,
+                    'B': self.B,
+                    'G': self.G,
+                    'R': self.R,
+                    'x': self.x,
+                    'y': self.y})
+
 
 def DistinctColorFloat(random):
     h = 6*random.random()
@@ -201,7 +208,7 @@ class Multiple:
         # self.t[0].a.c.B = 0
         self.Ntot = self.N*self.s.Nsym
     def Transform(self, p, r):
-        i = quickrand32(r) % self.Ntot
+        i = r.quickrand32() % self.Ntot
         if i < self.N:
             return self.t[i].Transform(p)
         return self.s.Transform(p)
@@ -229,9 +236,14 @@ class Multiple:
             print 'weird business'
             return h
         r = QuickRandom()
+        print r.quickrand32()
+        print r.quickrand32()
+        print r.quickrand32()
         self.scale_up_by = 1.0
         for i in xrange(4*nx*ny):
             self.place_point(h, p)
+            if i < 5:
+                print p
             p = self.Transform(p, r)
         meandist = 0
         norm = 0

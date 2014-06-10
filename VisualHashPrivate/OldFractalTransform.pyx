@@ -26,7 +26,6 @@ cdef unsigned int quickrand32(QuickRandom *s):
 
 cdef struct Point:
     double x, y, R, G, B, A
-
 def MakePoint(x, y):
     cdef Point p = Point(x, y, 0,0,0,0)
     return p
@@ -266,8 +265,13 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
     cdef double scale_up_by = 1.0
     r.m_w = 1
     r.m_z = 2
+    print quickrand32(&r)
+    print quickrand32(&r)
+    print quickrand32(&r)
     for i in xrange(4*nx*ny):
         place_point(h, p, t.m.roundedness, scale_up_by)
+        if i < 5:
+            print p
         p = multipleTransform(t.m, p, &r)
     cdef double meandist = 0
     cdef double norm = 0
@@ -282,7 +286,7 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
     meandist /= norm
     print 'meandist is', meandist
     scale_up_by = 1.0/meandist
-    for i in xrange(400*nx*ny):
+    for i in xrange(100*nx*ny):
         place_point(h, p, t.m.roundedness, scale_up_by)
         p = multipleTransform(t.m, p, &r)
     return h
