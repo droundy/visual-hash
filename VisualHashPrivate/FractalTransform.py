@@ -2,16 +2,18 @@ from __future__ import division
 #cython: nonecheck=True
 #        ^^^ Turns on nonecheck globally
 
-from libc.math cimport log, sqrt, cos, sin, atan2
+#from libc.math cimport log, sqrt, cos, sin, atan2
+from math import log, sqrt, cos, sin, atan2
 
+import random
 import numpy as np
 
 # QuickRandom is a low-quality random number generator used for the
 # chaos game only.  It should ensure that we always generate an
 # identical image for a given resolution.
 class QuickRandom:
-    m_w = 0
-    m_z = 0
+    m_w = 1
+    m_z = 2
 
 def quickrand32(s):
     s.m_z = 36969 * (s.m_z & 65535) + (s.m_z >> 16)
@@ -19,19 +21,9 @@ def quickrand32(s):
     return (s.m_z << 16) + s.m_w  # 32-bit result
 
 class Point:
-    def __init__(self, x,y,R,G,B,A):
+    def __init__(self, x,y,R=0,G=0,B=0,A=0):
         self.x = x
         self.y = y
-        self.R = R
-        self.G = G
-        self.B = B
-        self.A = A
-
-def MakePoint(x, y):
-    return Point(x, y, 0,0,0,0)
-
-class ColorTransform:
-    def __init__(self, R, G, B, A):
         self.R = R
         self.G = G
         self.B = B
@@ -71,237 +63,199 @@ def DistinctColor(random):
     r, g, b = DistinctColorFloat(random)
     return int(256*r), int(256*g), int(256*b)
 
-def MakeColorTransform(random):
-    out = ColorTransform(0, 0, 0, 1)
-    out.R, out.G, out.B = DistinctColorFloat(random)
-    # out.R = random.uniform(0,1)
-    # out.G = random.uniform(0,1)
-    # out.B = random.uniform(0,1)
-    m = out.R
-    if out.G > m:
-        m = out.G
-    if out.B > m:
-        m = out.B
-    out.R /= m
-    out.G /= m
-    out.B /= m
-    return out
-
-def colorTransform(c, p):
-    p.R = (c.A*c.R + p.A*p.R)/(c.A + p.A)
-    p.G = (c.A*c.G + p.A*p.G)/(c.A + p.A)
-    p.B = (c.A*c.B + p.A*p.B)/(c.A + p.A)
-    p.A = (c.A+p.A)/2
-    return p
+class ColorTransform:
+    def __init__(self, random):
+        self.R, self.G, self.B = DistinctColorFloat(random)
+        # self.R = random.uniform(0,1)
+        # self.G = random.uniform(0,1)
+        # self.B = random.uniform(0,1)
+        m = self.R
+        if self.G > m:
+            m = self.G
+        if self.B > m:
+            m = self.B
+        self.R /= m
+        self.G /= m
+        self.B /= m
+        self.A = 1
+    def Transform(c, p):
+        p.R = (c.A*c.R + p.A*p.R)/(c.A + p.A)
+        p.G = (c.A*c.G + p.A*p.G)/(c.A + p.A)
+        p.B = (c.A*c.B + p.A*p.B)/(c.A + p.A)
+        p.A = (c.A+p.A)/2
+        return p
 
 class Affine:
-    def __init__(self, compressme, theta, Mxx, Mxy, Myx, Myy, Ox, Oy)
-        self.c = c
-        self.compressme = compressme
-        self.theta = theta
-        self.Mxx = Mxx
-        self.Mxy = Mxy
-        self.Myx = Myx
-        self.Myy = Myy
-        self.Ox = Ox
-        self.Oy = Oy
+    def __init__(self, random):
+        self.c = ColorTransform(random)
+        # currently we always initialize pseudorandomly, but
+        # eventually we'll want to generate this deterministically.
+        self.theta = 2*np.pi*random.random()
+        rot = np.matrix([[cos(self.theta), sin(self.theta)],
+                         [-sin(self.theta),cos(self.theta)]])
+        self.compressme = random.gauss(0.8, 0.2)
+        compress = np.matrix([[self.compressme, 0],
+                              [0, self.compressme]])
+        mat = compress*rot
+        self.Mxx = mat[0,0]
+        self.Mxy = mat[0,1]
+        self.Myx = mat[1,0]
+        self.Myy = mat[1,1]
+        translation_scale = 0.8
+        self.Ox = random.gauss(0, translation_scale)
+        self.Oy = random.gauss(0, translation_scale)
+    def Transform(self, p):
+        out = self.c.Transform(p)
+        p.x -= self.Ox
+        p.y -= self.Oy
+        out.x = p.x*self.Mxx + p.y*self.Mxy # + self.Ox
+        out.y = p.x*self.Myx + p.y*self.Myy # + self.Oy
+        #p.x += self.Ox
+        #p.y += self.Oy
+        return out
 
-def MakeAffine(random):
-    cdef Affine a
-    a.c = MakeColorTransform(random)
-    # currently we always initialize pseudorandomly, but
-    # eventually we'll want to generate this deterministically.
-    a.theta = 2*np.pi*random.random()
-    rot = np.matrix([[cos(a.theta), sin(a.theta)],
-                     [-sin(a.theta),cos(a.theta)]])
-    a.compressme = random.gauss(0.8, 0.2)
-    compress = np.matrix([[a.compressme, 0],
-                          [0, a.compressme]])
-    mat = compress*rot
-    a.Mxx = mat[0,0]
-    a.Mxy = mat[0,1]
-    a.Myx = mat[1,0]
-    a.Myy = mat[1,1]
-    cdef double translation_scale = 0.8
-    a.Ox = random.gauss(0, translation_scale)
-    a.Oy = random.gauss(0, translation_scale)
-    return a
+class Fancy:
+    #Affine a
+    #double spiralness, radius, bounciness
+    #int bumps
+    def __init__(self, random):
+        self.a = Affine(random)
+        self.spiralness = random.gauss(0, 3)
+        self.radius = random.gauss(.4, .2)
+        self.bounciness = random.gauss(2, 2)
+        self.bumps = random.randint(1, 4)
+    def Transform(self, p):
+        out = self.a.Transform(p)
+        r = sqrt(out.x*out.x + out.y*out.y)
+        theta = atan2(out.y, out.x)
+        maxrad = self.radius*(1+self.bounciness*sin(theta*self.bumps))
+        out.x = maxrad*sin(r/maxrad)*sin(theta + self.spiralness*r)
+        out.y = maxrad*sin(r/maxrad)*cos(theta + self.spiralness*r)
+        return out
+    def Filename(self):
+        return 'image_%.2g_%.2g_%.2g_%d__%.2g_%.2g.png' % (self.radius, self.spiralness, self.bounciness, self.bumps, self.a.compressme, self.a.theta)
 
-cdef Point affineTransform(Affine a, Point p):
-    cdef Point out = colorTransform(a.c, p)
-    p.x -= a.Ox
-    p.y -= a.Oy
-    out.x = p.x*a.Mxx + p.y*a.Mxy # + a.Ox
-    out.y = p.x*a.Myx + p.y*a.Myy # + a.Oy
-    #p.x += a.Ox
-    #p.y += a.Oy
-    return out
+class rzero(random.Random):
+    def random(self):
+        return 0.1
 
-cdef struct Fancy:
-    Affine a
-    double spiralness, radius, bounciness
-    int bumps
-
-cdef Fancy MakeFancy(random):
-    cdef Fancy f
-    f.a = MakeAffine(random)
-    f.spiralness = random.gauss(0, 3)
-    f.radius = random.gauss(.4, .2)
-    f.bounciness = random.gauss(2, 2)
-    f.bumps = random.randint(1, 4)
-    return f
-
-cdef Point fancyTransform(Fancy f, Point p):
-    cdef Point out = affineTransform(f.a, p)
-    cdef Point nex = out
-    cdef double r = sqrt(out.x*out.x + out.y*out.y)
-    cdef double theta = atan2(out.y, out.x)
-    cdef double maxrad = f.radius*(1+f.bounciness*sin(theta*f.bumps))
-    nex.x = maxrad*sin(r/maxrad)*sin(theta + f.spiralness*r)
-    nex.y = maxrad*sin(r/maxrad)*cos(theta + f.spiralness*r)
-    return nex
-
-def fancyFilename(Fancy f):
-    return 'image_%.2g_%.2g_%.2g_%d__%.2g_%.2g.png' % (f.radius, f.spiralness, f.bounciness, f.bumps, f.a.compressme, f.a.theta)
-
-cdef struct Symmetry:
-    Affine a
-    int Nsym
-
-cdef Symmetry MakeSymmetry(random):
-    cdef Symmetry s
-    cdef double theta = 2*np.pi*random.random()
-    cdef double translation_scale = 0.1
-    s.a.Ox = random.gauss(0, translation_scale)
-    s.a.Oy = random.gauss(0, translation_scale)
-    cdef double nnn = random.expovariate(1.0/3)
-    s.Nsym = 1 + <int>nnn
-    if s.Nsym == 1 and random.randint(0,1) == 0:
-        print 'Mirror plane'
-        s.Nsym = 2
+class Symmetry:
+    #Affine a
+    #int Nsym
+    def __init__(self, random):
         theta = 2*np.pi*random.random()
-        vx = sin(theta)
-        vy = cos(theta)
-        s.a.Mxx = vx
-        s.a.Myy = -vx
-        s.a.Mxy = vy
-        s.a.Myx = vy
-    else:
-        print 'Rotation:', s.Nsym, 'from', nnn
-        s.a.Mxx = cos(2*np.pi/s.Nsym)
-        s.a.Myy = s.a.Mxx
-        s.a.Mxy = sin(2*np.pi/s.Nsym)
-        s.a.Myx = -s.a.Mxy
-    print np.array([[s.a.Mxx, s.a.Mxy],
-                    [s.a.Myx, s.a.Myy]])
-    print 'origin', s.a.Ox, s.a.Oy
-    return s
+        translation_scale = 0.1
+        self.a = Affine(rzero())
+        self.a.Ox = random.gauss(0, translation_scale)
+        self.a.Oy = random.gauss(0, translation_scale)
+        nnn = random.expovariate(1.0/3)
+        self.Nsym = 1 + int(nnn)
+        if self.Nsym == 1 and random.randint(0,1) == 0:
+            print 'Mirror plane'
+            self.Nsym = 2
+            theta = 2*np.pi*random.random()
+            vx = sin(theta)
+            vy = cos(theta)
+            self.a.Mxx = vx
+            self.a.Myy = -vx
+            self.a.Mxy = vy
+            self.a.Myx = vy
+        else:
+            print 'Rotation:', self.Nsym, 'from', nnn
+            self.a.Mxx = cos(2*np.pi/self.Nsym)
+            self.a.Myy = self.a.Mxx
+            self.a.Mxy = sin(2*np.pi/self.Nsym)
+            self.a.Myx = -self.a.Mxy
+        print np.array([[self.a.Mxx, self.a.Mxy],
+                        [self.a.Myx, self.a.Myy]])
+        print 'origin', self.a.Ox, self.a.Oy
+    def Transform(self, p):
+        px = p.x
+        py = p.y
+        px -= self.a.Ox
+        py -= self.a.Oy
+        p.x = px*self.a.Mxx + py*self.a.Mxy
+        p.y = px*self.a.Myx + py*self.a.Myy
+        p.x += self.a.Ox
+        p.y += self.a.Oy
+        return p
 
-cdef Point symmetryTransform(Symmetry s, Point p):
-    cdef double px = p.x
-    cdef double py = p.y
-    px -= s.a.Ox
-    py -= s.a.Oy
-    p.x = px*s.a.Mxx + py*s.a.Mxy
-    p.y = px*s.a.Myx + py*s.a.Myy
-    p.x += s.a.Ox
-    p.y += s.a.Oy
-    return p
-
-DEF Ntransform = 10
-cdef struct CMultiple:
-    Fancy t[Ntransform]
-    Symmetry s
-    int N
-    int Ntot
-    double roundedness
-
-cdef CMultiple MakeCMultiple(random):
-    cdef CMultiple m
-    m.roundedness = random.random()
-    m.s = MakeSymmetry(random)
-    m.N = Ntransform # - m.s.Nsym
-    if m.N < 5:
-        m.N = 5
-    cdef int i
-    for i in range(m.N):
-        m.t[i] = MakeFancy(random)
-    # m.t[0].a.c.R = 0
-    # m.t[0].a.c.G = 0
-    # m.t[0].a.c.B = 0
-    m.Ntot = m.N*m.s.Nsym
-    return m
-
-cdef Point multipleTransform(CMultiple m, Point p, QuickRandom *r):
-    cdef int i = quickrand32(r) % m.Ntot
-    if i < m.N:
-        return fancyTransform(m.t[i], p)
-    return symmetryTransform(m.s, p)
-
-cdef class Multiple:
-    cdef CMultiple m
-    cpdef Randomize(self, random):
-        self.m = MakeCMultiple(random)
-        return self
-    cdef Point transform(self, Point p, QuickRandom *r):
-        return multipleTransform(self.m, p, r)
+Ntransform = 10
+class Multiple:
+    #Fancy t[Ntransform]
+    #Symmetry s
+    #int N
+    #int Ntot
+    #double roundedness
+    def __init__(self, random):
+        self.roundedness = random.random()
+        self.s = Symmetry(random)
+        self.N = Ntransform # - self.s.Nsym
+        if self.N < 5:
+            self.N = 5
+        self.t = [0]*self.N
+        for i in range(self.N):
+            self.t[i] = Fancy(random)
+        # self.t[0].a.c.R = 0
+        # self.t[0].a.c.G = 0
+        # self.t[0].a.c.B = 0
+        self.Ntot = self.N*self.s.Nsym
+    def Transform(self, p, r):
+        i = quickrand32(r) % self.Ntot
+        if i < self.N:
+            return self.t[i].Transform(p)
+        return self.s.Transform(p)
     def TakeApart(self):
         transforms = [('image.png', self)]
-        for i in range(self.m.N):
-            foo = Multiple()
-            foo.m.N = 1
-            foo.m.Ntot = 1
-            foo.m.t[0] = self.m.t[i]
-            transforms.append((fancyFilename(foo.m.t[0]), foo))
+        for i in range(self.N):
+            foo = Multiple(rzero())
+            foo.N = 1
+            foo.Ntot = 1
+            foo.t[0] = self.m.t[i]
+            transforms.append((fancyFilename(foo.t[0]), foo))
         return transforms
-
-cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p, double roundedness, double scaleup):
-    cdef double x = p.x*scaleup
-    cdef double y = p.y*scaleup
-    cdef int ix = <int>((x/sqrt(x**2 + roundedness*y**2 + 1)+1)/2*h.shape[1])
-    cdef int iy = <int>((y/sqrt(y**2 + roundedness*x**2 + 1)+1)/2*h.shape[2])
-    h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
-    h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
-    h[2, ix % h.shape[1], iy % h.shape[2]] += p.G
-    h[3, ix % h.shape[1], iy % h.shape[2]] += p.B
-
-cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
-                                           int nx, int ny):
-    cdef np.ndarray[DTYPE_t, ndim=3] h = np.zeros([4, nx,ny], dtype=DTYPE)
-    if t.m.Ntot == 0:
-        print 'weird business'
+    def place_point(self, h, p):
+        x = p.x*self.scale_up_by
+        y = p.y*self.scale_up_by
+        ix = int((x/sqrt(x**2 + self.roundedness*y**2 + 1)+1)/2*h.shape[1])
+        iy = int((y/sqrt(y**2 + self.roundedness*x**2 + 1)+1)/2*h.shape[2])
+        h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
+        h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
+        h[2, ix % h.shape[1], iy % h.shape[2]] += p.G
+        h[3, ix % h.shape[1], iy % h.shape[2]] += p.B
+    def Simulate(self, p, nx, ny):
+        h = np.zeros([4, nx, ny], dtype=np.double)
+        if self.Ntot == 0:
+            print 'weird business'
+            return h
+        r = QuickRandom()
+        self.scale_up_by = 1.0
+        for i in xrange(4*nx*ny):
+            self.place_point(h, p)
+            p = self.Transform(p, r)
+        meandist = 0
+        norm = 0
+        for i in range(h.shape[1]):
+            xx = (i - h.shape[1]/2.0)/(h.shape[1]/2.0)
+            for j in range(h.shape[2]):
+                yy = (j - h.shape[2]/2.0)/(h.shape[2]/2.0)
+                norm += h[0, i, j]
+                meandist += h[0, i, j]*sqrt(xx**2 + yy**2)
+                h[:,i,j] = 0
+        meandist /= norm
+        print 'meandist is', meandist
+        self.scale_up_by = 1.0/meandist
+        for i in xrange(100*nx*ny):
+            self.place_point(h, p)
+            p = self.Transform(p, r)
         return h
-    cdef QuickRandom r
-    cdef double scale_up_by = 1.0
-    r.m_w = 1
-    r.m_z = 2
-    for i in xrange(4*nx*ny):
-        place_point(h, p, t.m.roundedness, scale_up_by)
-        p = multipleTransform(t.m, p, &r)
-    cdef double meandist = 0
-    cdef double norm = 0
-    cdef double xx, yy
-    for i in range(h.shape[1]):
-        xx = (i - h.shape[1]/2.0)/(h.shape[1]/2.0)
-        for j in range(h.shape[2]):
-            yy = (j - h.shape[2]/2.0)/(h.shape[2]/2.0)
-            norm += h[0, i, j]
-            meandist += h[0, i, j]*sqrt(xx**2 + yy**2)
-            h[:,i,j] = 0
-    meandist /= norm
-    print 'meandist is', meandist
-    scale_up_by = 1.0/meandist
-    for i in xrange(400*nx*ny):
-        place_point(h, p, t.m.roundedness, scale_up_by)
-        p = multipleTransform(t.m, p, &r)
-    return h
 
-cpdef np.ndarray[DTYPE_t, ndim=3] get_colors(np.ndarray[DTYPE_t, ndim=3] h):
-    cdef np.ndarray[DTYPE_t, ndim=3] img = np.zeros([4, h.shape[1], h.shape[2]], dtype=DTYPE)
-    cdef DTYPE_t maxa = 0
-    cdef DTYPE_t mean_nonzero_a = 0
-    cdef int num_nonzero = 0
-    cdef DTYPE_t mina = 1e300
+def get_colors(h):
+    img = np.zeros([4, h.shape[1], h.shape[2]], dtype=np.double)
+    maxa = 0
+    mean_nonzero_a = 0
+    num_nonzero = 0
+    mina = 1e300
     for i in xrange(h.shape[1]):
         for j in xrange(h.shape[2]):
             if h[0,i,j] > maxa:
@@ -312,9 +266,8 @@ cpdef np.ndarray[DTYPE_t, ndim=3] get_colors(np.ndarray[DTYPE_t, ndim=3] h):
                 mean_nonzero_a += h[0,i,j]
                 num_nonzero += 1
     mean_nonzero_a /= num_nonzero
-    cdef double factor = maxa/(mean_nonzero_a*mean_nonzero_a)
-    cdef double norm = 1.0/log(factor*maxa)
-    cdef double a
+    factor = maxa/(mean_nonzero_a*mean_nonzero_a)
+    norm = 1.0/log(factor*maxa)
     for i in xrange(h.shape[1]):
         for j in xrange(h.shape[2]):
             if h[0,i,j] > 0:

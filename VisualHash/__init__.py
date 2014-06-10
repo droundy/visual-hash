@@ -38,11 +38,8 @@ except:
 
 from VisualHashPrivate import identicon
 from VisualHashPrivate import randomart
-try:
-    from VisualHashPrivate.FractalTransform import DistinctColor
-    from VisualHashPrivate import FractalTransform
-except:
-    print '****** There will be no fractals!!! *******'
+from VisualHashPrivate.FractalTransform import DistinctColor
+from VisualHashPrivate import FractalTransform
 
 # annoying imports to enable "random" duplication without strange
 # __init__ error.
@@ -168,8 +165,8 @@ def Fractal(random = StrongRandom(""), size = 128):
     Given a string (and optionally a size in pixels) return a PIL
     Image that is a strong cryptographic hash of the string.
     """
-    transform = FractalTransform.Multiple().Randomize(random)
-    h = FractalTransform.Simulate(transform, FractalTransform.MakePoint(.1,.232332), size, size)
+    transform = FractalTransform.Multiple(random)
+    h = transform.Simulate(FractalTransform.Point(.1,.232332), size, size)
     img = Image.new( 'RGBA', (size,size), "black") # create a new black image
     pixels = img.load() # create the pixel map
     colors = FractalTransform.get_colors(h)
