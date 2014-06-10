@@ -1,13 +1,24 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
-from setuptools import setup, find_packages, Extension
+from distutils.core import setup
+from distutils.extension import Extension
+
 try:
     from Cython.Build import cythonize
+    USE_CYTHON = True
+    ext = '.pyx'
 except:
-    def cythonize(x):
-        return [Extension(x[:-4], [x[:-4]+'.c'])]
-import os
+    USE_CYTHON = False
+    ext = '.c'
 
+extensions = [Extension("VisualHashPrivate.FractalTransform",
+                        ["VisualHashPrivate/FractalTransform"+ext])]
+
+if USE_CYTHON:
+    from Cython.Build import cythonize
+    extensions = cythonize(extensions)
+
+import os
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
 # README file and 2) it's easier to type in the README file than to put a raw
@@ -17,17 +28,13 @@ def read(fname):
 
 setup(
     packages = ['VisualHash', 'VisualHashPrivate'],
+    ext_modules = extensions,
     install_requires = [
-        "Cython", 'pycrypto'
+        'pycrypto'
         ],
-    setup_requires = [
-        "Cython",
-        ],
-    py_modules = ['VisualHash'],
-    ext_modules = cythonize("VisualHashPrivate/FractalTransform.pyx"),
     license = "BSD",
     name = "visual-hash",
-    version = "0.0.0.12",
+    version = "0.0.0.13",
     url = "https://github.com/droundy/visual-hash",
     author = "David Roundy",
     author_email = "daveroundy@gmail.com",

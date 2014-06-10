@@ -38,8 +38,11 @@ except:
 
 from VisualHashPrivate import identicon
 from VisualHashPrivate import randomart
-from VisualHashPrivate.FractalTransform import DistinctColor
-from VisualHashPrivate import FractalTransform
+try:
+    from VisualHashPrivate.FractalTransform import DistinctColor
+    from VisualHashPrivate import FractalTransform
+except:
+    print '****** There will be no fractals!!! *******'
 
 # annoying imports to enable "random" duplication without strange
 # __init__ error.
