@@ -13,16 +13,19 @@ import Color
 # QuickRandom is a low-quality random number generator used for the
 # chaos game only.  It should ensure that we always generate an
 # identical image for a given resolution.
-class QuickRandom:
-    m_w = 1
-    m_z = 2
-    def quickrand32(self):
+cdef class QuickRandom:
+    cdef unsigned int m_w, m_z
+    def __cinit__(self):
+        self.m_w = 1
+        self.m_z = 2
+    cpdef unsigned int quickrand32(self):
         self.m_z = 36969 * (self.m_z & 65535) + (self.m_z >> 16)
         self.m_w = 18000 * (self.m_w & 65535) + (self.m_w >> 16)
         return ((self.m_z << 16) + self.m_w) & 0xFFFFFFFF  # 32-bit result
 
-class Point:
-    def __init__(self, x,y,R=0,G=0,B=0,A=0):
+cdef class Point:
+    cdef public double x, y, R, G, B, A
+    def __cinit__(self, x,y,R=0,G=0,B=0,A=0):
         self.x = x
         self.y = y
         self.R = R
@@ -195,7 +198,7 @@ class Multiple:
         if self.Ntot == 0:
             print 'weird business'
             return h
-        r = QuickRandom()
+        cdef QuickRandom r = QuickRandom()
         self.scale_up_by = 1.0
         for i in xrange(4*nx*ny):
             self.place_point(h, p)

@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -ev
+
+case "$TEST" in
+    none)
+        echo Tests skipped! >> "$1"
+        ;;
+    *)
+        echo Tested on `hostname`. >> "$1"
+        echo >> "$1"
+        python hash.py >> "$1"
+        ;;
+esac
