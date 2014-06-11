@@ -21,8 +21,8 @@ todo = ['old', 'fractal', 'optimized']
 timereport = ''
 
 if 'old' in todo:
-    print '\nworking on old fractal'
-    print '======================'
+    # print '\nworking on old fractal'
+    # print '======================'
     before = time.clock()
     img = VisualHash.OldFractal(VisualHash.StrongRandom(data), 128)
     after = time.clock()
@@ -30,17 +30,17 @@ if 'old' in todo:
     img.save('oldimage.png')
 
 if 'fractal' in todo:
-    print '\nworking on new fractal'
-    print '======================'
+    # print '\nworking on pure python fractal'
+    # print '=============================='
     before = time.clock()
     img = VisualHash.Fractal(VisualHash.StrongRandom(data), 128)
     after = time.clock()
-    timereport += '\nnew fractal algorithm took %g seconds' % (after - before)
+    timereport += '\npure python fractal algorithm took %g seconds' % (after - before)
     img.save('image.png')
 
 if 'optimized' in todo:
-    print '\nworking on optimized fractal'
-    print '============================'
+    # print '\nworking on optimized fractal'
+    # print '============================'
     before = time.clock()
     img = VisualHash.OptimizedFractal(VisualHash.StrongRandom(data), 128)
     after = time.clock()
