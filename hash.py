@@ -16,9 +16,11 @@ use = 'old'
 use = 'new'
 use = 'both'
 
+todo = ['old', 'fractal', 'optimized']
+
 timereport = ''
 
-if use == 'old' or use == 'both':
+if 'old' in todo:
     print '\nworking on old fractal'
     print '======================'
     before = time.clock()
@@ -27,14 +29,23 @@ if use == 'old' or use == 'both':
     timereport += '\nold fractal algorithm took %g seconds' % (after - before)
     img.save('oldimage.png')
 
-if use == 'new' or use == 'both':
+if 'fractal' in todo:
     print '\nworking on new fractal'
     print '======================'
     before = time.clock()
-    img = myhash(VisualHash.StrongRandom(data), 128)
+    img = VisualHash.Fractal(VisualHash.StrongRandom(data), 128)
     after = time.clock()
     timereport += '\nnew fractal algorithm took %g seconds' % (after - before)
     img.save('image.png')
+
+if 'optimized' in todo:
+    print '\nworking on optimized fractal'
+    print '============================'
+    before = time.clock()
+    img = VisualHash.OptimizedFractal(VisualHash.StrongRandom(data), 128)
+    after = time.clock()
+    timereport += '\noptimized fractal algorithm took %g seconds' % (after - before)
+    img.save('optimizedimage.png')
 #img.show()
 
 print timereport
