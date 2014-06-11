@@ -18,7 +18,7 @@ case "$TEST" in
         ;;
     *)
         echo Testing build!
-        python hash.py
+        python hash.py > /tmp/visual-commit
         echo It worked!
         ;;
 esac

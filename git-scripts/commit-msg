@@ -10,6 +10,6 @@ case "$TEST" in
         echo >> "$1"
         echo Tested on `hostname`. >> "$1"
         echo >> "$1"
-        python hash.py >> "$1"
+        cat /tmp/visual-commit >> "$1"
         ;;
 esac
