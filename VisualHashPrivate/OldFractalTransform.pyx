@@ -3,6 +3,8 @@
 
 from libc.math cimport log, sqrt, cos, sin, atan2
 
+import Color
+
 import numpy as np
 cimport numpy as np
 # We now need to fix a datatype for our arrays. I've used the variable
@@ -33,44 +35,10 @@ def MakePoint(x, y):
 cdef struct ColorTransform:
     double R, G, B, A
 
-def DistinctColorFloat(random):
-    h = 6*random.random()
-    saturation = random.random()**.5
-    value = random.random()
-    cutoff = 0.4
-    power = 0.25
-    if value < cutoff:
-        value = cutoff*(value/cutoff)**power
-    if value > 1.0 - cutoff:
-        value = (1.0-cutoff) + cutoff*(value - (1.0 - cutoff))**power
-    c = saturation*value
-    x = c*(1-(h % 2 - 1))
-    if h < 1:
-        r, g, b = c, x, 0
-    elif h < 2:
-        r, g, b = x, c, 0
-    elif h < 3:
-        r, g, b = 0, c, x
-    elif h < 4:
-        r, g, b = 0, x, c
-    elif h < 5:
-        r, g, b = x, 0, c
-    else:
-        r, g, b = c, 0, x
-    m = value - c
-    r = r + m
-    g = g + m
-    b = b + m
-    return r, g, b
-
-def DistinctColor(random):
-    r, g, b = DistinctColorFloat(random)
-    return int(256*r), int(256*g), int(256*b)
-
 cdef ColorTransform MakeColorTransform(random):
     cdef ColorTransform out
     out.A = 1
-    out.R, out.G, out.B = DistinctColorFloat(random)
+    out.R, out.G, out.B = Color.DistinctColorFloat(random)
     # out.R = random.uniform(0,1)
     # out.G = random.uniform(0,1)
     # out.B = random.uniform(0,1)
@@ -265,13 +233,8 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
     cdef double scale_up_by = 1.0
     r.m_w = 1
     r.m_z = 2
-    print quickrand32(&r)
-    print quickrand32(&r)
-    print quickrand32(&r)
     for i in xrange(4*nx*ny):
         place_point(h, p, t.m.roundedness, scale_up_by)
-        if i < 5:
-            print p
         p = multipleTransform(t.m, p, &r)
     cdef double meandist = 0
     cdef double norm = 0

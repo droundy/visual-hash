@@ -38,7 +38,7 @@ except:
 
 from VisualHashPrivate import identicon
 from VisualHashPrivate import randomart
-from VisualHashPrivate.FractalTransform import DistinctColor
+from VisualHashPrivate.Color import DistinctColor
 from VisualHashPrivate import FractalTransform
 try:
     from VisualHashPrivate import OldFractalTransform

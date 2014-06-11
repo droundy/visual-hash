@@ -8,6 +8,8 @@ from math import log, sqrt, cos, sin, atan2
 import random
 import numpy as np
 
+import Color
+
 # QuickRandom is a low-quality random number generator used for the
 # chaos game only.  It should ensure that we always generate an
 # identical image for a given resolution.
@@ -36,43 +38,9 @@ class Point:
                     'y': self.y})
 
 
-def DistinctColorFloat(random):
-    h = 6*random.random()
-    saturation = random.random()**.5
-    value = random.random()
-    cutoff = 0.4
-    power = 0.25
-    if value < cutoff:
-        value = cutoff*(value/cutoff)**power
-    if value > 1.0 - cutoff:
-        value = (1.0-cutoff) + cutoff*(value - (1.0 - cutoff))**power
-    c = saturation*value
-    x = c*(1-(h % 2 - 1))
-    if h < 1:
-        r, g, b = c, x, 0
-    elif h < 2:
-        r, g, b = x, c, 0
-    elif h < 3:
-        r, g, b = 0, c, x
-    elif h < 4:
-        r, g, b = 0, x, c
-    elif h < 5:
-        r, g, b = x, 0, c
-    else:
-        r, g, b = c, 0, x
-    m = value - c
-    r = r + m
-    g = g + m
-    b = b + m
-    return r, g, b
-
-def DistinctColor(random):
-    r, g, b = DistinctColorFloat(random)
-    return int(256*r), int(256*g), int(256*b)
-
 class ColorTransform:
     def __init__(self, random):
-        self.R, self.G, self.B = DistinctColorFloat(random)
+        self.R, self.G, self.B = Color.DistinctColorFloat(random)
         # self.R = random.uniform(0,1)
         # self.G = random.uniform(0,1)
         # self.B = random.uniform(0,1)
@@ -86,11 +54,12 @@ class ColorTransform:
         self.B /= m
         self.A = 1
     def Transform(c, p):
-        p.R = (c.A*c.R + p.A*p.R)/(c.A + p.A)
-        p.G = (c.A*c.G + p.A*p.G)/(c.A + p.A)
-        p.B = (c.A*c.B + p.A*p.B)/(c.A + p.A)
-        p.A = (c.A+p.A)/2
-        return p
+        out = Point(p.x, p.y)
+        out.R = (c.A*c.R + p.A*p.R)/(c.A + p.A)
+        out.G = (c.A*c.G + p.A*p.G)/(c.A + p.A)
+        out.B = (c.A*c.B + p.A*p.B)/(c.A + p.A)
+        out.A = (c.A+p.A)/2
+        return out
 
 class Affine:
     def __init__(self, random):
@@ -236,14 +205,9 @@ class Multiple:
             print 'weird business'
             return h
         r = QuickRandom()
-        print r.quickrand32()
-        print r.quickrand32()
-        print r.quickrand32()
         self.scale_up_by = 1.0
         for i in xrange(4*nx*ny):
             self.place_point(h, p)
-            if i < 5:
-                print p
             p = self.Transform(p, r)
         meandist = 0
         norm = 0
