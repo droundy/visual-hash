@@ -130,7 +130,7 @@ class Symmetry:
         nnn = random.expovariate(1.0/3)
         self.Nsym = 1 + int(nnn)
         if self.Nsym == 1 and random.randint(0,1) == 0:
-            print 'Mirror plane'
+            # print 'Mirror plane'
             self.Nsym = 2
             theta = 2*np.pi*random.random()
             vx = sin(theta)
@@ -140,14 +140,14 @@ class Symmetry:
             self.a.Mxy = vy
             self.a.Myx = vy
         else:
-            print 'Rotation:', self.Nsym, 'from', nnn
+            # print 'Rotation:', self.Nsym, 'from', nnn
             self.a.Mxx = cos(2*np.pi/self.Nsym)
             self.a.Myy = self.a.Mxx
             self.a.Mxy = sin(2*np.pi/self.Nsym)
             self.a.Myx = -self.a.Mxy
-        print np.array([[self.a.Mxx, self.a.Mxy],
-                        [self.a.Myx, self.a.Myy]])
-        print 'origin', self.a.Ox, self.a.Oy
+        # print np.array([[self.a.Mxx, self.a.Mxy],
+        #                 [self.a.Myx, self.a.Myy]])
+        # print 'origin', self.a.Ox, self.a.Oy
     def Transform(self, p):
         px = p.x
         py = p.y
@@ -213,9 +213,9 @@ class Multiple:
                 meandist += h[0, i, j]*sqrt(xx**2 + yy**2)
                 h[:,i,j] = 0
         meandist /= norm
-        print 'meandist is', meandist
+        # print 'meandist is', meandist
         self.scale_up_by = 1.0/meandist
-        for i in xrange(100*nx*ny):
+        for i in xrange(10*nx*ny):
             self.place_point(h, p)
             p = self.Transform(p, r)
         return h

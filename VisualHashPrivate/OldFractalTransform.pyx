@@ -135,7 +135,7 @@ cdef Symmetry MakeSymmetry(random):
     cdef double nnn = random.expovariate(1.0/3)
     s.Nsym = 1 + <int>nnn
     if s.Nsym == 1 and random.randint(0,1) == 0:
-        print 'Mirror plane'
+        # print 'Mirror plane'
         s.Nsym = 2
         theta = 2*np.pi*random.random()
         vx = sin(theta)
@@ -145,14 +145,14 @@ cdef Symmetry MakeSymmetry(random):
         s.a.Mxy = vy
         s.a.Myx = vy
     else:
-        print 'Rotation:', s.Nsym, 'from', nnn
+        # print 'Rotation:', s.Nsym, 'from', nnn
         s.a.Mxx = cos(2*np.pi/s.Nsym)
         s.a.Myy = s.a.Mxx
         s.a.Mxy = sin(2*np.pi/s.Nsym)
         s.a.Myx = -s.a.Mxy
-    print np.array([[s.a.Mxx, s.a.Mxy],
-                    [s.a.Myx, s.a.Myy]])
-    print 'origin', s.a.Ox, s.a.Oy
+    # print np.array([[s.a.Mxx, s.a.Mxy],
+    #                 [s.a.Myx, s.a.Myy]])
+    # print 'origin', s.a.Ox, s.a.Oy
     return s
 
 cdef Point symmetryTransform(Symmetry s, Point p):
@@ -247,9 +247,9 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
             meandist += h[0, i, j]*sqrt(xx**2 + yy**2)
             h[:,i,j] = 0
     meandist /= norm
-    print 'meandist is', meandist
+    # print 'meandist is', meandist
     scale_up_by = 1.0/meandist
-    for i in xrange(100*nx*ny):
+    for i in xrange(10*nx*ny):
         place_point(h, p, t.m.roundedness, scale_up_by)
         p = multipleTransform(t.m, p, &r)
     return h
