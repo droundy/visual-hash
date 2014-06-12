@@ -41,8 +41,9 @@ cdef class Point:
                     'y': self.y})
 
 
-class ColorTransform:
-    def __init__(self, random):
+cdef class ColorTransform:
+    cdef public double R, G, B, A
+    def __cinit__(self, random):
         self.R, self.G, self.B = Color.DistinctColorFloat(random)
         # self.R = random.uniform(0,1)
         # self.G = random.uniform(0,1)
@@ -56,16 +57,18 @@ class ColorTransform:
         self.G /= m
         self.B /= m
         self.A = 1
-    def Transform(c, p):
-        out = Point(p.x, p.y)
-        out.R = (c.A*c.R + p.A*p.R)/(c.A + p.A)
-        out.G = (c.A*c.G + p.A*p.G)/(c.A + p.A)
-        out.B = (c.A*c.B + p.A*p.B)/(c.A + p.A)
-        out.A = (c.A+p.A)/2
+    cdef Point Transform(self, Point p):
+        cdef Point out = Point(p.x, p.y)
+        out.R = (self.A*self.R + p.A*p.R)/(self.A + p.A)
+        out.G = (self.A*self.G + p.A*p.G)/(self.A + p.A)
+        out.B = (self.A*self.B + p.A*p.B)/(self.A + p.A)
+        out.A = (self.A+p.A)/2
         return out
 
-class Affine:
-    def __init__(self, random):
+cdef class Affine:
+    cdef public ColorTransform c
+    cdef public double Mxx, Mxy, Myx, Myy, Ox, Oy, theta, compressme
+    def __cinit__(self, random):
         self.c = ColorTransform(random)
         # currently we always initialize pseudorandomly, but
         # eventually we'll want to generate this deterministically.
@@ -80,11 +83,11 @@ class Affine:
         self.Mxy = mat[0,1]
         self.Myx = mat[1,0]
         self.Myy = mat[1,1]
-        translation_scale = 0.8
+        cdef double translation_scale = 0.8
         self.Ox = random.gauss(0, translation_scale)
         self.Oy = random.gauss(0, translation_scale)
-    def Transform(self, p):
-        out = self.c.Transform(p)
+    cpdef Point Transform(self, Point p):
+        cdef Point out = self.c.Transform(p)
         p.x -= self.Ox
         p.y -= self.Oy
         out.x = p.x*self.Mxx + p.y*self.Mxy # + self.Ox
@@ -93,21 +96,21 @@ class Affine:
         #p.y += self.Oy
         return out
 
-class Fancy:
-    #Affine a
-    #double spiralness, radius, bounciness
-    #int bumps
-    def __init__(self, random):
+cdef class Fancy:
+    cdef public Affine a
+    cdef public double spiralness, radius, bounciness
+    cdef public int bumps
+    def __cinit__(self, random):
         self.a = Affine(random)
         self.spiralness = random.gauss(0, 3)
         self.radius = random.gauss(.4, .2)
         self.bounciness = random.gauss(2, 2)
         self.bumps = random.randint(1, 4)
-    def Transform(self, p):
-        out = self.a.Transform(p)
-        r = sqrt(out.x*out.x + out.y*out.y)
-        theta = atan2(out.y, out.x)
-        maxrad = self.radius*(1+self.bounciness*sin(theta*self.bumps))
+    cpdef Point Transform(self, Point p):
+        cdef Point out = self.a.Transform(p)
+        cdef double r = sqrt(out.x*out.x + out.y*out.y)
+        cdef double theta = atan2(out.y, out.x)
+        cdef double maxrad = self.radius*(1+self.bounciness*sin(theta*self.bumps))
         out.x = maxrad*sin(r/maxrad)*sin(theta + self.spiralness*r)
         out.y = maxrad*sin(r/maxrad)*cos(theta + self.spiralness*r)
         return out
@@ -118,16 +121,16 @@ class rzero(random.Random):
     def random(self):
         return 0.1
 
-class Symmetry:
-    #Affine a
-    #int Nsym
-    def __init__(self, random):
-        theta = 2*np.pi*random.random()
-        translation_scale = 0.1
+cdef class Symmetry:
+    cdef public Affine a
+    cdef public int Nsym
+    def __cinit__(self, random):
+        cdef double theta = 2*np.pi*random.random()
+        cdef double translation_scale = 0.1
         self.a = Affine(rzero())
         self.a.Ox = random.gauss(0, translation_scale)
         self.a.Oy = random.gauss(0, translation_scale)
-        nnn = random.expovariate(1.0/3)
+        cdef double nnn = random.expovariate(1.0/3)
         self.Nsym = 1 + int(nnn)
         if self.Nsym == 1 and random.randint(0,1) == 0:
             # print 'Mirror plane'
@@ -148,24 +151,25 @@ class Symmetry:
         # print np.array([[self.a.Mxx, self.a.Mxy],
         #                 [self.a.Myx, self.a.Myy]])
         # print 'origin', self.a.Ox, self.a.Oy
-    def Transform(self, p):
-        px = p.x
-        py = p.y
+    cpdef Point Transform(self, Point p):
+        cdef double px = p.x
+        cdef double py = p.y
         px -= self.a.Ox
         py -= self.a.Oy
-        p.x = px*self.a.Mxx + py*self.a.Mxy
-        p.y = px*self.a.Myx + py*self.a.Myy
-        p.x += self.a.Ox
-        p.y += self.a.Oy
-        return p
+        cdef Point out = p
+        out.x = px*self.a.Mxx + py*self.a.Mxy
+        out.y = px*self.a.Myx + py*self.a.Myy
+        out.x += self.a.Ox
+        out.y += self.a.Oy
+        return out
 
 Ntransform = 10
-class Multiple:
+cdef class Multiple:
     #Fancy t[Ntransform]
-    #Symmetry s
-    #int N
-    #int Ntot
-    #double roundedness
+    cdef public object t
+    cdef public Symmetry s
+    cdef public int N, Ntot
+    cdef public double roundedness, scale_up_by
     def __init__(self, random):
         self.roundedness = random.random()
         self.s = Symmetry(random)
@@ -179,16 +183,16 @@ class Multiple:
         # self.t[0].a.c.G = 0
         # self.t[0].a.c.B = 0
         self.Ntot = self.N*self.s.Nsym
-    def Transform(self, p, r):
+    cdef Point Transform(self, Point p, QuickRandom r):
         i = r.quickrand32() % self.Ntot
         if i < self.N:
             return self.t[i].Transform(p)
         return self.s.Transform(p)
-    def place_point(self, h, p):
-        x = p.x*self.scale_up_by
-        y = p.y*self.scale_up_by
-        ix = int((x/sqrt(x**2 + self.roundedness*y**2 + 1)+1)/2*h.shape[1])
-        iy = int((y/sqrt(y**2 + self.roundedness*x**2 + 1)+1)/2*h.shape[2])
+    cdef place_point(self, h, Point p):
+        cdef double x = p.x*self.scale_up_by
+        cdef double y = p.y*self.scale_up_by
+        cdef int ix = int((x/sqrt(x**2 + self.roundedness*y**2 + 1)+1)/2*h.shape[1])
+        cdef int iy = int((y/sqrt(y**2 + self.roundedness*x**2 + 1)+1)/2*h.shape[2])
         h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
         h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
         h[2, ix % h.shape[1], iy % h.shape[2]] += p.G
