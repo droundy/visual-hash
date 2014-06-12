@@ -1,6 +1,7 @@
 from __future__ import division
 #cython: nonecheck=True
 #        ^^^ Turns on nonecheck globally
+# cython: profile=True
 
 #from libc.math cimport log, sqrt, cos, sin, atan2
 from math import log, sqrt, cos, sin, atan2
@@ -191,8 +192,8 @@ cdef class Multiple:
     cdef place_point(self, h, Point p):
         cdef double x = p.x*self.scale_up_by
         cdef double y = p.y*self.scale_up_by
-        cdef int ix = int((x/sqrt(x**2 + self.roundedness*y**2 + 1)+1)/2*h.shape[1])
-        cdef int iy = int((y/sqrt(y**2 + self.roundedness*x**2 + 1)+1)/2*h.shape[2])
+        cdef int ix = int((x/sqrt(x*x + self.roundedness*y*y + 1)+1)/2*h.shape[1])
+        cdef int iy = int((y/sqrt(y*y + self.roundedness*x*x + 1)+1)/2*h.shape[2])
         h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
         h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
         h[2, ix % h.shape[1], iy % h.shape[2]] += p.G

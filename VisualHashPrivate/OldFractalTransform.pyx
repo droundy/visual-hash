@@ -1,5 +1,6 @@
 #cython: nonecheck=True
 #        ^^^ Turns on nonecheck globally
+# cython: profile=True
 
 from libc.math cimport log, sqrt, cos, sin, atan2
 
@@ -216,8 +217,8 @@ cdef class Multiple:
 cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p, double roundedness, double scaleup):
     cdef double x = p.x*scaleup
     cdef double y = p.y*scaleup
-    cdef int ix = <int>((x/sqrt(x**2 + roundedness*y**2 + 1)+1)/2*h.shape[1])
-    cdef int iy = <int>((y/sqrt(y**2 + roundedness*x**2 + 1)+1)/2*h.shape[2])
+    cdef int ix = <int>((x/sqrt(x*x + roundedness*y*y + 1)+1)/2*h.shape[1])
+    cdef int iy = <int>((y/sqrt(y*y + roundedness*x*x + 1)+1)/2*h.shape[2])
     h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
     h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
     h[2, ix % h.shape[1], iy % h.shape[2]] += p.G

@@ -193,8 +193,8 @@ class Multiple:
     def place_point(self, h, p):
         x = p.x*self.scale_up_by
         y = p.y*self.scale_up_by
-        ix = int((x/sqrt(x**2 + self.roundedness*y**2 + 1)+1)/2*h.shape[1])
-        iy = int((y/sqrt(y**2 + self.roundedness*x**2 + 1)+1)/2*h.shape[2])
+        ix = int((x/sqrt(x*x + self.roundedness*y*y + 1)+1)/2*h.shape[1])
+        iy = int((y/sqrt(y*y + self.roundedness*x*x + 1)+1)/2*h.shape[2])
         h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
         h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
         h[2, ix % h.shape[1], iy % h.shape[2]] += p.G

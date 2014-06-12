@@ -3,6 +3,10 @@
 import VisualHash
 import time
 
+doprofile = True
+if doprofile:
+    import pstats, cProfile
+
 data = 'Hello world'
 
 myhash = VisualHash.Flag
@@ -20,16 +24,19 @@ todo = ['old', 'fractal', 'optimized']
 
 timereport = ''
 
-if 'old' in todo:
-    # print '\nworking on old fractal'
-    # print '======================'
-    before = time.clock()
-    img = VisualHash.OldFractal(VisualHash.StrongRandom(data), 128)
-    after = time.clock()
-    timereport += '\nold fractal algorithm took %g seconds' % (after - before)
-    img.save('oldimage.png')
-
 if 'fractal' in todo:
+    if doprofile:
+        print '\nworking on pure python fractal'
+        print '==============================='
+
+        before = time.clock()
+        cProfile.runctx("VisualHash.Fractal(VisualHash.StrongRandom(data), 128)",
+                        globals(), locals(), "pure.prof")
+        after = time.clock()
+        timereport += '\nprofiling old fractal algorithm took %g seconds' % (after - before)
+        s = pstats.Stats("pure.prof")
+        s.strip_dirs().sort_stats("time").print_stats(15)
+
     # print '\nworking on pure python fractal'
     # print '=============================='
     before = time.clock()
@@ -38,9 +45,38 @@ if 'fractal' in todo:
     timereport += '\npure python fractal algorithm took %g seconds' % (after - before)
     img.save('image.png')
 
+if 'old' in todo:
+    if doprofile:
+        print '\nworking on old fractal'
+        print '======================'
+
+        before = time.clock()
+        cProfile.runctx("VisualHash.OldFractal(VisualHash.StrongRandom(data), 128)",
+                        globals(), locals(), "old.prof")
+        after = time.clock()
+        timereport += '\nprofiling old fractal algorithm took %g seconds' % (after - before)
+        s = pstats.Stats("old.prof")
+        s.strip_dirs().sort_stats("time").print_stats(15)
+
+    before = time.clock()
+    img = VisualHash.OldFractal(VisualHash.StrongRandom(data), 128)
+    after = time.clock()
+    timereport += '\nold fractal algorithm took %g seconds' % (after - before)
+    img.save('oldimage.png')
+
 if 'optimized' in todo:
-    # print '\nworking on optimized fractal'
-    # print '============================'
+    if doprofile:
+        print '\nworking on optimized fractal'
+        print '============================'
+
+        before = time.clock()
+        cProfile.runctx("VisualHash.OptimizedFractal(VisualHash.StrongRandom(data), 128)",
+                        globals(), locals(), "opt.prof")
+        after = time.clock()
+        timereport += '\nprofiling optimized fractal algorithm took %g seconds' % (after - before)
+        s = pstats.Stats("opt.prof")
+        s.strip_dirs().sort_stats("time").print_stats(15)
+
     before = time.clock()
     img = VisualHash.OptimizedFractal(VisualHash.StrongRandom(data), 128)
     after = time.clock()
