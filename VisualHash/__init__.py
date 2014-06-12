@@ -170,7 +170,7 @@ def Fractal(random = StrongRandom(""), size = 128):
     """
     Create a hash as a fractal flame.
 
-    Given a string (and optionally a size in pixels) return a PIL
+    Given a random generator (and optionally a size in pixels) return a PIL
     Image that is a strong cryptographic hash of the string.
     """
     transform = FractalTransform.Multiple(random)
@@ -191,7 +191,7 @@ def OldFractal(random = StrongRandom(""), size = 128):
     """
     Create a hash as a fractal flame.
 
-    Given a string (and optionally a size in pixels) return a PIL
+    Given a random generator (and optionally a size in pixels) return a PIL
     Image that is a strong cryptographic hash of the string.
     """
     transform = OldFractalTransform.Multiple().Randomize(random)
@@ -212,7 +212,7 @@ def OptimizedFractal(random = StrongRandom(""), size = 128):
     """
     Create a hash as a fractal flame.
 
-    Given a string (and optionally a size in pixels) return a PIL
+    Given a random generator (and optionally a size in pixels) return a PIL
     Image that is a strong cryptographic hash of the string.
     """
     transform = OptimizedFractalTransform.Multiple(random)
@@ -233,7 +233,7 @@ def Flag(random = StrongRandom(""), size = 128):
     """
     Create a hash using the "flag" algorithm.
 
-    Given a string (and optionally a size in pixels) return a PIL
+    Given a random generator (and optionally a size in pixels) return a PIL
     Image that is a strong cryptographic hash of the string.
     """
     img = Image.new( 'RGBA', (size,size), "black") # create a new black image
@@ -254,7 +254,7 @@ def TFlag(random = StrongRandom(""), size = 128):
     """
     Create a hash using the "flag" algorithm.
 
-    Given a string (and optionally a size in pixels) return a PIL
+    Given a random generator (and optionally a size in pixels) return a PIL
     Image that is a strong cryptographic hash of the string.
     """
     img = Image.new( 'RGBA', (size,size), "black") # create a new black image
@@ -277,7 +277,7 @@ def Identicon(random = StrongRandom(""), size = 128):
     """
     Create an identicon hash.
 
-    Given a string (and optionally a size in pixels) return a PIL
+    Given a random generator (and optionally a size in pixels) return a PIL
     Image that is a hash of the string.  This hash has only 32 bits in
     it, so it is not a strong hash.
     """
@@ -292,7 +292,7 @@ def RandomArt(random = StrongRandom(""), size = 128):
     """
     Create a hash using the randomart algorithm.
 
-    Given a string (and optionally a size in pixels) return a PIL
+    Given a random generator (and optionally a size in pixels) return a PIL
     Image that is a strong cryptographic hash of the string.
     """
     img = randomart.Create(random, size)
