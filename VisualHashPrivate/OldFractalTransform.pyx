@@ -1,8 +1,10 @@
-#cython: nonecheck=True
-#        ^^^ Turns on nonecheck globally
+#cy  thon: nonecheck=True
+#        ^^^ Turns o  n nonecheck globally
 # cython: profile=True
 
 from libc.math cimport log, sqrt, cos, sin, atan2
+
+from PIL import Image as IMG
 
 import Color
 
@@ -219,15 +221,16 @@ cdef place_point(np.ndarray[DTYPE_t, ndim=3] h, Point p, double roundedness, dou
     cdef double y = p.y*scaleup
     cdef int ix = <int>((x/sqrt(x*x + roundedness*y*y + 1)+1)/2*h.shape[1])
     cdef int iy = <int>((y/sqrt(y*y + roundedness*x*x + 1)+1)/2*h.shape[2])
-    h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
-    h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
-    h[2, ix % h.shape[1], iy % h.shape[2]] += p.G
-    h[3, ix % h.shape[1], iy % h.shape[2]] += p.B
+    ix = ix % h.shape[1]
+    iy = iy % h.shape[2]
+    h[0, ix, iy] += p.A
+    h[1, ix, iy] += p.R
+    h[2, ix, iy] += p.G
+    h[3, ix, iy] += p.B
 
-cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
-                                           int nx, int ny):
+cdef np.ndarray[DTYPE_t, ndim=3] Simulate(CMultiple t, Point p, int nx, int ny):
     cdef np.ndarray[DTYPE_t, ndim=3] h = np.zeros([4, nx,ny], dtype=DTYPE)
-    if t.m.Ntot == 0:
+    if t.Ntot == 0:
         print 'weird business'
         return h
     cdef QuickRandom r
@@ -235,8 +238,8 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
     r.m_w = 1
     r.m_z = 2
     for i in xrange(4*nx*ny):
-        place_point(h, p, t.m.roundedness, scale_up_by)
-        p = multipleTransform(t.m, p, &r)
+        place_point(h, p, t.roundedness, scale_up_by)
+        p = multipleTransform(t, p, &r)
     cdef double meandist = 0
     cdef double norm = 0
     cdef double xx, yy
@@ -251,11 +254,11 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
     # print 'meandist is', meandist
     scale_up_by = 1.0/meandist
     for i in xrange(100*nx*ny):
-        place_point(h, p, t.m.roundedness, scale_up_by)
-        p = multipleTransform(t.m, p, &r)
+        place_point(h, p, t.roundedness, scale_up_by)
+        p = multipleTransform(t, p, &r)
     return h
 
-cpdef np.ndarray[DTYPE_t, ndim=3] get_colors(np.ndarray[DTYPE_t, ndim=3] h):
+cdef np.ndarray[DTYPE_t, ndim=3] get_colors(np.ndarray[DTYPE_t, ndim=3] h):
     cdef np.ndarray[DTYPE_t, ndim=3] img = np.zeros([4, h.shape[1], h.shape[2]], dtype=DTYPE)
     cdef DTYPE_t maxa = 0
     cdef DTYPE_t mean_nonzero_a = 0
@@ -298,4 +301,20 @@ cpdef np.ndarray[DTYPE_t, ndim=3] get_colors(np.ndarray[DTYPE_t, ndim=3] h):
                             if jj >= 0 and jj < h.shape[2] and h[3,ii,jj] > 0:
                                 v = (1.0 + blackrad - d)/blackrad
                                 img[3,i,j] = max(img[3,i,j], v)
+    return img
+
+cpdef Image(random, int size = 128):
+    cdef CMultiple transform = MakeCMultiple(random)
+    cdef Point p = MakePoint(0.1, 0.232332)
+    cdef np.ndarray[DTYPE_t, ndim=3]hh = Simulate(transform, p, size, size)
+    img = IMG.new( 'RGBA', (size,size), "black") # create a new black image
+    pixels = img.load() # create the pixel map
+    cdef np.ndarray[DTYPE_t, ndim=3] colors = get_colors(hh)
+
+    for i in range(img.size[0]):    # for every pixel:
+        for j in range(img.size[1]):
+            pixels[i,j] = (int(256*colors[0,i,j]),
+                           int(256*colors[1,i,j]),
+                           int(256*colors[2,i,j]),
+                           int(256*colors[3,i,j])) # set the colour accordingly
     return img

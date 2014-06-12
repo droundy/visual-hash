@@ -20,7 +20,7 @@ use = 'old'
 use = 'new'
 use = 'both'
 
-todo = ['old', 'fractal', 'optimized']
+todo = ['old', 'fractal ', 'optimized']
 
 timereport = ''
 

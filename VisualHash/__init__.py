@@ -194,19 +194,7 @@ def OldFractal(random = StrongRandom(""), size = 128):
     Given a random generator (and optionally a size in pixels) return a PIL
     Image that is a strong cryptographic hash of the string.
     """
-    transform = OldFractalTransform.Multiple().Randomize(random)
-    h = OldFractalTransform.Simulate(transform, OldFractalTransform.MakePoint(.1,.232332), size, size)
-    img = Image.new( 'RGBA', (size,size), "black") # create a new black image
-    pixels = img.load() # create the pixel map
-    colors = OldFractalTransform.get_colors(h)
-
-    for i in range(img.size[0]):    # for every pixel:
-        for j in range(img.size[1]):
-            pixels[i,j] = (int(256*colors[0,i,j]),
-                           int(256*colors[1,i,j]),
-                           int(256*colors[2,i,j]),
-                           int(256*colors[3,i,j])) # set the colour accordingly
-    return img
+    return OldFractalTransform.Image(random, size)
 
 def OptimizedFractal(random = StrongRandom(""), size = 128):
     """
