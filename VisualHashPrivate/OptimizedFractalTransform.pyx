@@ -219,7 +219,7 @@ cdef class Multiple:
         meandist /= norm
         # print 'meandist is', meandist
         self.scale_up_by = 1.0/meandist
-        for i in xrange(10*nx*ny):
+        for i in xrange(100*nx*ny):
             self.place_point(h, p)
             p = self.Transform(p, r)
         return h
