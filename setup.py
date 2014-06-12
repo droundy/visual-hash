@@ -11,8 +11,10 @@ except:
     USE_CYTHON = False
     ext = '.c'
 
-extensions = [Extension("VisualHashPrivate.FractalTransform",
-                        ["VisualHashPrivate/FractalTransform"+ext])]
+extensions = [Extension("VisualHashPrivate.OptimizedFractalTransform",
+                        ["VisualHashPrivate/OptimizedFractalTransform"+ext]),
+              Extension("VisualHashPrivate.OldFractalTransform",
+                        ["VisualHashPrivate/OldFractalTransform"+ext])]
 
 if USE_CYTHON:
     from Cython.Build import cythonize
@@ -28,7 +30,7 @@ def read(fname):
 
 setup(
     packages = ['VisualHash', 'VisualHashPrivate'],
-    #ext_modules = extensions,
+    ext_modules = extensions,
     install_requires = [
         'pycrypto'
         ],

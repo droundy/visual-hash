@@ -13,16 +13,20 @@ import Color
 # QuickRandom is a low-quality random number generator used for the
 # chaos game only.  It should ensure that we always generate an
 # identical image for a given resolution.
-class QuickRandom:
-    m_w = 1
-    m_z = 2
-    def quickrand32(self):
+cdef class QuickRandom:
+    cdef unsigned int m_w
+    cdef unsigned int m_z
+    def __cinit__(self):
+        self.m_w = 1
+        self.m_z = 2
+    cdef unsigned int quickrand32(self):
         self.m_z = 36969 * (self.m_z & 65535) + (self.m_z >> 16)
         self.m_w = 18000 * (self.m_w & 65535) + (self.m_w >> 16)
         return ((self.m_z << 16) + self.m_w) & 0xFFFFFFFF  # 32-bit result
 
-class Point:
-    def __init__(self, x,y,R=0,G=0,B=0,A=0):
+cdef class Point:
+    cdef double x, y, R, G, B, A
+    def __cinit__(self, x,y,R=0,G=0,B=0,A=0):
         self.x = x
         self.y = y
         self.R = R
@@ -38,8 +42,9 @@ class Point:
                     'y': self.y})
 
 
-class ColorTransform:
-    def __init__(self, random):
+cdef class ColorTransform:
+    cdef double R, G, B, A
+    def __cinit__(self, random):
         self.R, self.G, self.B = Color.DistinctColorFloat(random)
         # self.R = random.uniform(0,1)
         # self.G = random.uniform(0,1)
@@ -53,16 +58,18 @@ class ColorTransform:
         self.G /= m
         self.B /= m
         self.A = 1
-    def Transform(c, p):
-        out = Point(p.x, p.y)
-        out.R = (c.A*c.R + p.A*p.R)/(c.A + p.A)
-        out.G = (c.A*c.G + p.A*p.G)/(c.A + p.A)
-        out.B = (c.A*c.B + p.A*p.B)/(c.A + p.A)
-        out.A = (c.A+p.A)/2
+    cdef Point Transform(self, Point p):
+        cdef Point out = Point(p.x, p.y)
+        out.R = (self.A*self.R + p.A*p.R)/(self.A + p.A)
+        out.G = (self.A*self.G + p.A*p.G)/(self.A + p.A)
+        out.B = (self.A*self.B + p.A*p.B)/(self.A + p.A)
+        out.A = (self.A+p.A)/2
         return out
 
-class Affine:
-    def __init__(self, random):
+cdef class Affine:
+    cdef ColorTransform c
+    cdef double Mxx, Mxy, Myx, Myy, Ox, Oy
+    def __cinit__(self, random):
         self.c = ColorTransform(random)
         # currently we always initialize pseudorandomly, but
         # eventually we'll want to generate this deterministically.
@@ -80,31 +87,31 @@ class Affine:
         translation_scale = 0.8
         self.Ox = random.gauss(0, translation_scale)
         self.Oy = random.gauss(0, translation_scale)
-    def Transform(self, p):
-        out = self.c.Transform(p)
-        p.x -= self.Ox
-        p.y -= self.Oy
-        out.x = p.x*self.Mxx + p.y*self.Mxy # + self.Ox
-        out.y = p.x*self.Myx + p.y*self.Myy # + self.Oy
+    cdef Point Transform(self, Point p):
+        cdef Point out = self.c.Transform(p)
+        cdef double px = p.x - self.Ox
+        cdef double py = p.y - self.Oy
+        out.x = px*self.Mxx + py*self.Mxy # + self.Ox
+        out.y = px*self.Myx + py*self.Myy # + self.Oy
         #p.x += self.Ox
         #p.y += self.Oy
         return out
 
-class Fancy:
-    #Affine a
-    #double spiralness, radius, bounciness
-    #int bumps
-    def __init__(self, random):
+cdef class Fancy:
+    cdef Affine a
+    cdef double spiralness, radius, bounciness
+    cdef int bumps
+    def __cinit__(self, random):
         self.a = Affine(random)
         self.spiralness = random.gauss(0, 3)
         self.radius = random.gauss(.4, .2)
         self.bounciness = random.gauss(2, 2)
         self.bumps = random.randint(1, 4)
-    def Transform(self, p):
-        out = self.a.Transform(p)
-        r = sqrt(out.x*out.x + out.y*out.y)
-        theta = atan2(out.y, out.x)
-        maxrad = self.radius*(1+self.bounciness*sin(theta*self.bumps))
+    cdef Point Transform(self, Point p):
+        cdef Point out = self.a.Transform(p)
+        cdef double r = sqrt(out.x*out.x + out.y*out.y)
+        cdef double theta = atan2(out.y, out.x)
+        cdef double maxrad = self.radius*(1+self.bounciness*sin(theta*self.bumps))
         out.x = maxrad*sin(r/maxrad)*sin(theta + self.spiralness*r)
         out.y = maxrad*sin(r/maxrad)*cos(theta + self.spiralness*r)
         return out
@@ -115,16 +122,16 @@ class rzero(random.Random):
     def random(self):
         return 0.1
 
-class Symmetry:
-    #Affine a
-    #int Nsym
-    def __init__(self, random):
-        theta = 2*np.pi*random.random()
-        translation_scale = 0.1
+cdef class Symmetry:
+    cdef Affine a
+    cdef int Nsym
+    def __cinit__(self, random):
+        cdef double theta = 2*np.pi*random.random()
+        cdef double translation_scale = 0.1
         self.a = Affine(rzero())
         self.a.Ox = random.gauss(0, translation_scale)
         self.a.Oy = random.gauss(0, translation_scale)
-        nnn = random.expovariate(1.0/3)
+        cdef double nnn = random.expovariate(1.0/3)
         self.Nsym = 1 + int(nnn)
         if self.Nsym == 1 and random.randint(0,1) == 0:
             print 'Mirror plane'
@@ -145,25 +152,26 @@ class Symmetry:
         print np.array([[self.a.Mxx, self.a.Mxy],
                         [self.a.Myx, self.a.Myy]])
         print 'origin', self.a.Ox, self.a.Oy
-    def Transform(self, p):
-        px = p.x
-        py = p.y
+    cdef Point Transform(self, Point p):
+        cdef double px = p.x
+        cdef double py = p.y
         px -= self.a.Ox
         py -= self.a.Oy
-        p.x = px*self.a.Mxx + py*self.a.Mxy
-        p.y = px*self.a.Myx + py*self.a.Myy
-        p.x += self.a.Ox
-        p.y += self.a.Oy
-        return p
+        cdef Point out = p
+        out.x = px*self.a.Mxx + py*self.a.Mxy
+        out.y = px*self.a.Myx + py*self.a.Myy
+        out.x += self.a.Ox
+        out.y += self.a.Oy
+        return out
 
-Ntransform = 10
-class Multiple:
-    #Fancy t[Ntransform]
-    #Symmetry s
-    #int N
-    #int Ntot
-    #double roundedness
-    def __init__(self, random):
+cdef int Ntransform = 10
+cdef class Multiple:
+    # cdef Fancy t[Ntransform]
+    cdef Symmetry s
+    cdef int N
+    cdef int Ntot
+    cdef double roundedness
+    def __cinit__(self, random):
         self.roundedness = random.random()
         self.s = Symmetry(random)
         self.N = Ntransform # - self.s.Nsym
@@ -212,7 +220,7 @@ class Multiple:
         meandist /= norm
         print 'meandist is', meandist
         self.scale_up_by = 1.0/meandist
-        for i in xrange(100*nx*ny):
+        for i in xrange(1000*nx*ny):
             self.place_point(h, p)
             p = self.Transform(p, r)
         return h

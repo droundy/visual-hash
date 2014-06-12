@@ -249,7 +249,7 @@ cpdef np.ndarray[DTYPE_t, ndim=3] Simulate(Multiple t, Point p,
     meandist /= norm
     print 'meandist is', meandist
     scale_up_by = 1.0/meandist
-    for i in xrange(100*nx*ny):
+    for i in xrange(1000*nx*ny):
         place_point(h, p, t.m.roundedness, scale_up_by)
         p = multipleTransform(t.m, p, &r)
     return h
