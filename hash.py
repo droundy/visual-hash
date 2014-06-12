@@ -20,7 +20,7 @@ use = 'old'
 use = 'new'
 use = 'both'
 
-todo = ['old', 'fractal ', 'optimized']
+todo = ['old', 'fractal', 'optimized']
 
 timereport = ''
 
@@ -35,7 +35,7 @@ if 'fractal' in todo:
         after = time.clock()
         timereport += '\nprofiling old fractal algorithm took %g seconds' % (after - before)
         s = pstats.Stats("pure.prof")
-        s.strip_dirs().sort_stats("time").print_stats(15)
+        s.strip_dirs().sort_stats("time").print_stats(10)
 
     # print '\nworking on pure python fractal'
     # print '=============================='
@@ -56,7 +56,7 @@ if 'old' in todo:
         after = time.clock()
         timereport += '\nprofiling old fractal algorithm took %g seconds' % (after - before)
         s = pstats.Stats("old.prof")
-        s.strip_dirs().sort_stats("time").print_stats(15)
+        s.strip_dirs().sort_stats("time").print_stats(10)
 
     before = time.clock()
     img = VisualHash.OldFractal(VisualHash.StrongRandom(data), 128)
@@ -75,7 +75,7 @@ if 'optimized' in todo:
         after = time.clock()
         timereport += '\nprofiling optimized fractal algorithm took %g seconds' % (after - before)
         s = pstats.Stats("opt.prof")
-        s.strip_dirs().sort_stats("time").print_stats(15)
+        s.strip_dirs().sort_stats("time").print_stats(10)
 
     before = time.clock()
     img = VisualHash.OptimizedFractal(VisualHash.StrongRandom(data), 128)
