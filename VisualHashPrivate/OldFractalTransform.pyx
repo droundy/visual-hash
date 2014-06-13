@@ -3,7 +3,7 @@
 # cython: profile=True
 
 from libc.math cimport log, sqrt, cos, sin, atan2, M_PI
-from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
 
 from PIL import Image as IMG
 
@@ -276,6 +276,7 @@ cpdef Image(random, int size = 128):
     img = IMG.new( 'RGBA', (size,size), "black") # create a new black image
     pixels = img.load() # create the pixel map
     get_colors(colors, h, size)
+    PyMem_Free(h)
 
     for i in range(img.size[0]):    # for every pixel:
         for j in range(img.size[1]):
@@ -283,4 +284,5 @@ cpdef Image(random, int size = 128):
                            int(256*colors[1*(size*size) + i*size + j]),
                            int(256*colors[2*(size*size) + i*size + j]),
                            int(256*colors[3*(size*size) + i*size + j])) # set the colour accordingly
+    PyMem_Free(colors)
     return img
