@@ -8,7 +8,7 @@ if doprofile:
     import pstats, cProfile
 
 data = 'Hello world'
-size = 128
+size = 256
 
 myhash = VisualHash.Flag
 myhash = VisualHash.TFlag
@@ -21,7 +21,7 @@ use = 'old'
 use = 'new'
 use = 'both'
 
-todo = ['old', 'fractal', 'optimized']
+todo = ['old', 'fractal ', 'optimized']
 
 timereport = ''
 
