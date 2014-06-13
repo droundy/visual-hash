@@ -252,6 +252,9 @@ cdef get_colors(double *img, double *h, int size):
                 img[2*(size*size) + i*size + j] = h[3*(size*size) + i*size + j]/h[0*(size*size) + i*size + j]*a
             else:
                 img[3*(size*size) + i*size + j] = 0
+                img[2*(size*size) + i*size + j] = 0
+                img[1*(size*size) + i*size + j] = 0
+                img[0*(size*size) + i*size + j] = 0
     for i in xrange(size):
         for j in xrange(size):
             if img[3*(size*size) + i*size + j] == 0:
@@ -267,10 +270,12 @@ cdef get_colors(double *img, double *h, int size):
                                 v = (1.0 + blackrad - d)/blackrad
                                 img[3*(size*size) + i*size + j] = max(img[3*(size*size) + i*size + j], v)
 
-cpdef Image(random, int size = 128):
+cpdef Image(random, int size):
     cdef CMultiple transform = MakeCMultiple(random)
     cdef Point p = MakePoint(0.1, 0.232332)
     cdef double *h = <double *>PyMem_Malloc(size*size*4*sizeof(double))
+    for i in range(size*size*4):
+        h[i] = 0
     cdef double *colors = <double *>PyMem_Malloc(size*size*4*sizeof(double))
     Simulate(h, transform, p, size)
     img = IMG.new( 'RGBA', (size,size), "black") # create a new black image
