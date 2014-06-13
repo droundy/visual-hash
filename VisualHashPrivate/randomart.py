@@ -66,7 +66,7 @@
 
 import math
 
-import Image
+from PIL import Image
 
 # Utility functions
 
