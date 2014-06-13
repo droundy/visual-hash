@@ -198,9 +198,15 @@ cdef Simulate(double *h, CMultiple t, Point p, int size):
     cdef double scale_up_by = 1.0
     r.m_w = 1
     r.m_z = 2
+    cdef int which
     for i in xrange(4*size*size):
         place_point(h, p, t.roundedness, scale_up_by, size)
-        p = multipleTransform(t, p, &r)
+        which = quickrand32(&r) % t.Ntot
+        if which < t.N:
+            p = fancyTransform(t.t[which], p)
+        else:
+            p = symmetryTransform(t.s, p)
+        # p = multipleTransform(t, p, &r)
     cdef double meandist = 0
     cdef double norm = 0
     cdef double xx, yy
@@ -217,7 +223,12 @@ cdef Simulate(double *h, CMultiple t, Point p, int size):
     scale_up_by = 1.0/meandist
     for i in xrange(100*size*size):
         place_point(h, p, t.roundedness, scale_up_by, size)
-        p = multipleTransform(t, p, &r)
+        which = quickrand32(&r) % t.Ntot
+        if which < t.N:
+            p = fancyTransform(t.t[which], p)
+        else:
+            p = symmetryTransform(t.s, p)
+        # p = multipleTransform(t, p, &r)
 
 cdef get_colors(double *img, double *h, int size):
     cdef double maxa = 0
