@@ -8,8 +8,6 @@ from math import log, sqrt, cos, sin, atan2, pi
 import random
 import array
 
-import numpy as np
-
 from PIL import Image as IMG
 import Color
 
@@ -186,84 +184,87 @@ class Multiple:
             foo.t[0] = self.m.t[i]
             transforms.append((fancyFilename(foo.t[0]), foo))
         return transforms
-    def place_point(self, h, p):
+    def place_point(self, h, p, size):
         x = p.x*self.scale_up_by
         y = p.y*self.scale_up_by
-        ix = int((x/sqrt(x*x + self.roundedness*y*y + 1)+1)/2*h.shape[1])
-        iy = int((y/sqrt(y*y + self.roundedness*x*x + 1)+1)/2*h.shape[2])
-        h[0, ix % h.shape[1], iy % h.shape[2]] += p.A
-        h[1, ix % h.shape[1], iy % h.shape[2]] += p.R
-        h[2, ix % h.shape[1], iy % h.shape[2]] += p.G
-        h[3, ix % h.shape[1], iy % h.shape[2]] += p.B
-    def Simulate(self, p, nx, ny):
-        h = np.zeros([4, nx, ny], dtype=np.double)
+        ix = int((x/sqrt(x*x + self.roundedness*y*y + 1)+1)/2*size)
+        iy = int((y/sqrt(y*y + self.roundedness*x*x + 1)+1)/2*size)
+        h[0*(size*size) + (ix % size)*size + iy % size] += p.A
+        h[1*(size*size) + (ix % size)*size + iy % size] += p.R
+        h[2*(size*size) + (ix % size)*size + iy % size] += p.G
+        h[3*(size*size) + (ix % size)*size + iy % size] += p.B
+    def Simulate(self, p, size):
+        h = array.array('d', [0]*(size*size*4))
         if self.Ntot == 0:
             print 'weird business'
             return h
         r = QuickRandom()
         self.scale_up_by = 1.0
-        for i in xrange(4*nx*ny):
-            self.place_point(h, p)
+        for i in xrange(4*size*size):
+            self.place_point(h, p, size)
             p = self.Transform(p, r)
         meandist = 0
         norm = 0
-        for i in range(h.shape[1]):
-            xx = (i - h.shape[1]/2.0)/(h.shape[1]/2.0)
-            for j in range(h.shape[2]):
-                yy = (j - h.shape[2]/2.0)/(h.shape[2]/2.0)
-                norm += h[0, i, j]
-                meandist += h[0, i, j]*sqrt(xx**2 + yy**2)
-                h[:,i,j] = 0
+        for i in range(size):
+            xx = (i - size/2.0)/(size/2.0)
+            for j in range(size):
+                yy = (j - size/2.0)/(size/2.0)
+                norm += h[0*(size*size) + i*size + j]
+                meandist += h[0*(size*size) + i*size + j]*sqrt(xx**2 + yy**2)
+                h[0*(size*size) + i*size + j] = 0
+                h[1*(size*size) + i*size + j] = 0
+                h[2*(size*size) + i*size + j] = 0
+                h[3*(size*size) + i*size + j] = 0
         meandist /= norm
         # print 'meandist is', meandist
         self.scale_up_by = 1.0/meandist
-        for i in xrange(100*nx*ny):
-            self.place_point(h, p)
+        for i in xrange(100*size*size):
+            self.place_point(h, p, size)
             p = self.Transform(p, r)
         return h
 
-def get_colors(h):
-    img = np.zeros([4, h.shape[1], h.shape[2]], dtype=np.double)
+def get_colors(h, size):
+    img = array.array('d', [0]*(size*size*4))
     maxa = 0
     mean_nonzero_a = 0
     num_nonzero = 0
     mina = 1e300
-    for i in xrange(h.shape[1]):
-        for j in xrange(h.shape[2]):
-            if h[0,i,j] > maxa:
-                maxa = h[0,i,j]
-            if h[0,i,j] > 0 and h[0,i,j] < mina:
-                mina = h[0,i,j]
-            if h[0,i,j] > 0:
-                mean_nonzero_a += h[0,i,j]
+    for i in xrange(size):
+        for j in xrange(size):
+            if h[0*(size*size) + i*size + j] > maxa:
+                maxa = h[0*(size*size) + i*size + j]
+            if h[0*(size*size) + i*size + j] > 0 and h[0*(size*size) + i*size + j] < mina:
+                mina = h[0*(size*size) + i*size + j]
+            if h[0*(size*size) + i*size + j] > 0:
+                mean_nonzero_a += h[0*(size*size) + i*size + j]
                 num_nonzero += 1
     mean_nonzero_a /= num_nonzero
     factor = maxa/(mean_nonzero_a*mean_nonzero_a)
     norm = 1.0/log(factor*maxa)
-    for i in xrange(h.shape[1]):
-        for j in xrange(h.shape[2]):
-            if h[0,i,j] > 0:
-                a = norm*log(factor*h[0,i,j]);
-                img[3,i,j] = 1
-                img[0,i,j] = h[1,i,j]/h[0,i,j]*a
-                img[1,i,j] = h[2,i,j]/h[0,i,j]*a
-                img[2,i,j] = h[3,i,j]/h[0,i,j]*a
+    for i in xrange(size):
+        for j in xrange(size):
+            if h[0*(size*size) + i*size + j] > 0:
+                a = norm*log(factor*h[0*(size*size) + i*size + j]);
+                img[3*(size*size) + i*size + j] = 1
+                img[0*(size*size) + i*size + j] = h[1*(size*size) + i*size + j]/h[0*(size*size) + i*size + j]*a
+                img[1*(size*size) + i*size + j] = h[2*(size*size) + i*size + j]/h[0*(size*size) + i*size + j]*a
+                img[2*(size*size) + i*size + j] = h[3*(size*size) + i*size + j]/h[0*(size*size) + i*size + j]*a
             else:
-                img[3,i,j] = 0
-    for i in xrange(h.shape[1]):
-        for j in xrange(h.shape[2]):
-            if img[3,i,j] == 0:
+                img[3*(size*size) + i*size + j] = 0
+    for i in xrange(size):
+        for j in xrange(size):
+            if img[3*(size*size) + i*size + j] == 0:
                 blackrad = 2.0
                 for di in xrange(-int(blackrad),int(blackrad)+1,1):
                     ii = i + di
-                    if ii >= 0 and ii < h.shape[1]:
+                    if ii >= 0 and ii < size:
                         djmax = int(sqrt((blackrad+.5)**2 - di**2))
                         for dj in xrange(-djmax,djmax+1,1):
                             jj = j + dj
                             d = sqrt(di**2 + dj**2)
-                            if jj >= 0 and jj < h.shape[2] and h[3,ii,jj] > 0:
+                            if jj >= 0 and jj < size and h[3*(size*size) + ii*size + jj] > 0:
                                 v = (1.0 + blackrad - d)/blackrad
-                                img[3,i,j] = max(img[3,i,j], v)
+                                img[3*(size*size) + i*size + j] = max(img[3*(size*size) + i*size + j], v)
     return img
 
 def Image(random, size = 128):
@@ -274,15 +275,15 @@ def Image(random, size = 128):
     Image that is a strong cryptographic hash of the string.
     """
     transform = Multiple(random)
-    h = transform.Simulate(Point(.1,.232332), size, size)
+    h = transform.Simulate(Point(.1,.232332), size)
     img = IMG.new( 'RGBA', (size,size), "black") # create a new black image
     pixels = img.load() # create the pixel map
-    colors = get_colors(h)
+    colors = get_colors(h, size)
 
     for i in range(img.size[0]):    # for every pixel:
         for j in range(img.size[1]):
-            pixels[i,j] = (int(256*colors[0,i,j]),
-                           int(256*colors[1,i,j]),
-                           int(256*colors[2,i,j]),
-                           int(256*colors[3,i,j])) # set the colour accordingly
+            pixels[i,j] = (int(256*colors[0*(size*size) + i*size + j]),
+                           int(256*colors[1*(size*size) + i*size + j]),
+                           int(256*colors[2*(size*size) + i*size + j]),
+                           int(256*colors[3*(size*size) + i*size + j])) # set the colour accordingly
     return img

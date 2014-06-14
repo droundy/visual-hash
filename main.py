@@ -38,7 +38,7 @@ class NiceImage(Image):
         super(NiceImage, self).__init__(**kw)
         self.on_text()
     def on_text(self, *args):
-        sz = 128
+        sz = 64
         kind = app.config.getdefault('game', 'hashtype', 'oops')
         hasher = VisualHash.Flag
         if kind == 'tflag':

@@ -2,6 +2,11 @@
 
 <Memory>:
     orientation: 'vertical'
+    NiceImage:
+        size_hint: 1, None
+        height: sp(128)
+        id: thehash
+        text: 'hello'
     Label:
         size_hint: 1, None
         height: sp(24)
@@ -9,9 +14,7 @@
     TextInput:
         text: 'Matching stuff here'
         on_text: thehash.text = self.text
-    NiceImage:
-        id: thehash
-        text: 'hello'
+
 
 <Matching>:
     orientation: 'vertical'

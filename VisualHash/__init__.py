@@ -43,7 +43,8 @@ from VisualHashPrivate import FractalTransform
 try:
     from VisualHashPrivate import OldFractalTransform
 except:
-    print '****** There will be no old fractals!!! *******'
+    import VisualHashPrivate.FractalTransform as OldFractalTransform
+    print '****** Fractals will be very slow!!! *******'
 try:
     from VisualHashPrivate import OptimizedFractalTransform
 except:
