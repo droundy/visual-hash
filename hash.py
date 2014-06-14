@@ -3,7 +3,7 @@
 import VisualHash
 import time
 
-doprofile = True
+doprofile = False
 if doprofile:
     import pstats, cProfile
 

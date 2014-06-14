@@ -250,8 +250,6 @@ cdef get_colors(double *img, double *h, int size):
     cdef double factor = maxa/(mean_nonzero_a*mean_nonzero_a)
     if factor*maxa == 1:
         factor /= 2
-    print 'maxa', maxa, 'factor', factor
-    print 'log(factor*maxa)', log(factor*maxa)
     cdef double norm = 1.0/log(factor*maxa)
     for i in xrange(size):
         for j in xrange(size):

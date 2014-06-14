@@ -1,0 +1,40 @@
+#:kivy 1.8.0
+
+<Memory>:
+    orientation: 'vertical'
+    Label:
+        size_hint: 1, None
+        height: sp(24)
+        text: 'Memory stuff here'
+    TextInput:
+        text: 'Matching stuff here'
+        on_text: thehash.text = self.text
+    NiceImage:
+        id: thehash
+        text: 'hello'
+
+<Matching>:
+    orientation: 'vertical'
+    Label:
+        text: 'Matching stuff here'
+    TextInput:
+        text: 'Matching stuff here'
+    Label:
+        text: 'More matching stuff here'
+
+<Home>:
+    #size_hint: .5, .5
+    #pos_hint: {'center_x': .5, 'center_y': .5}
+    do_default_tab: False
+
+    TabbedPanelItem:
+        text: 'Home'
+        RstDocument:
+            text: "Hello world\n-----------\nThis is a nice game.\n"
+
+    TabbedPanelItem:
+        text: 'Matching'
+        Matching:
+    TabbedPanelItem:
+        text: 'Memory'
+        Memory:

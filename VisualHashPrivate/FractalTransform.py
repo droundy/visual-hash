@@ -3,11 +3,14 @@ from __future__ import division
 #        ^^^ Turns on nonecheck globally
 
 #from libc.math cimport log, sqrt, cos, sin, atan2
-from math import log, sqrt, cos, sin, atan2
+from math import log, sqrt, cos, sin, atan2, pi
 
 import random
+import array
+
 import numpy as np
 
+from PIL import Image as IMG
 import Color
 
 # QuickRandom is a low-quality random number generator used for the
@@ -66,17 +69,12 @@ class Affine:
         self.c = ColorTransform(random)
         # currently we always initialize pseudorandomly, but
         # eventually we'll want to generate this deterministically.
-        self.theta = 2*np.pi*random.random()
-        rot = np.matrix([[cos(self.theta), sin(self.theta)],
-                         [-sin(self.theta),cos(self.theta)]])
+        self.theta = 2*pi*random.random()
         self.compressme = random.gauss(0.8, 0.2)
-        compress = np.matrix([[self.compressme, 0],
-                              [0, self.compressme]])
-        mat = compress*rot
-        self.Mxx = mat[0,0]
-        self.Mxy = mat[0,1]
-        self.Myx = mat[1,0]
-        self.Myy = mat[1,1]
+        self.Mxx =  cos(self.theta)*self.compressme
+        self.Mxy =  sin(self.theta)*self.compressme
+        self.Myx = -sin(self.theta)*self.compressme
+        self.Myy =  cos(self.theta)*self.compressme
         translation_scale = 0.8
         self.Ox = random.gauss(0, translation_scale)
         self.Oy = random.gauss(0, translation_scale)
@@ -119,7 +117,7 @@ class Symmetry:
     #Affine a
     #int Nsym
     def __init__(self, random):
-        theta = 2*np.pi*random.random()
+        theta = 2*pi*random.random()
         translation_scale = 0.1
         self.a = Affine(rzero())
         self.a.Ox = random.gauss(0, translation_scale)
@@ -129,7 +127,7 @@ class Symmetry:
         if self.Nsym == 1 and random.randint(0,1) == 0:
             # print 'Mirror plane'
             self.Nsym = 2
-            theta = 2*np.pi*random.random()
+            theta = 2*pi*random.random()
             vx = sin(theta)
             vy = cos(theta)
             self.a.Mxx = vx
@@ -138,12 +136,10 @@ class Symmetry:
             self.a.Myx = vy
         else:
             # print 'Rotation:', self.Nsym, 'from', nnn
-            self.a.Mxx = cos(2*np.pi/self.Nsym)
+            self.a.Mxx = cos(2*pi/self.Nsym)
             self.a.Myy = self.a.Mxx
-            self.a.Mxy = sin(2*np.pi/self.Nsym)
+            self.a.Mxy = sin(2*pi/self.Nsym)
             self.a.Myx = -self.a.Mxy
-        # print np.array([[self.a.Mxx, self.a.Mxy],
-        #                 [self.a.Myx, self.a.Myy]])
         # print 'origin', self.a.Ox, self.a.Oy
     def Transform(self, p):
         px = p.x
@@ -261,11 +257,32 @@ def get_colors(h):
                 for di in xrange(-int(blackrad),int(blackrad)+1,1):
                     ii = i + di
                     if ii >= 0 and ii < h.shape[1]:
-                        djmax = int(np.sqrt((blackrad+.5)**2 - di**2))
+                        djmax = int(sqrt((blackrad+.5)**2 - di**2))
                         for dj in xrange(-djmax,djmax+1,1):
                             jj = j + dj
-                            d = np.sqrt(di**2 + dj**2)
+                            d = sqrt(di**2 + dj**2)
                             if jj >= 0 and jj < h.shape[2] and h[3,ii,jj] > 0:
                                 v = (1.0 + blackrad - d)/blackrad
                                 img[3,i,j] = max(img[3,i,j], v)
+    return img
+
+def Image(random, size = 128):
+    """
+    Create a hash as a fractal flame.
+
+    Given a random generator (and optionally a size in pixels) return a PIL
+    Image that is a strong cryptographic hash of the string.
+    """
+    transform = Multiple(random)
+    h = transform.Simulate(Point(.1,.232332), size, size)
+    img = IMG.new( 'RGBA', (size,size), "black") # create a new black image
+    pixels = img.load() # create the pixel map
+    colors = get_colors(h)
+
+    for i in range(img.size[0]):    # for every pixel:
+        for j in range(img.size[1]):
+            pixels[i,j] = (int(256*colors[0,i,j]),
+                           int(256*colors[1,i,j]),
+                           int(256*colors[2,i,j]),
+                           int(256*colors[3,i,j])) # set the colour accordingly
     return img
