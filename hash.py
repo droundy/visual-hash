@@ -7,8 +7,8 @@ doprofile = False
 if doprofile:
     import pstats, cProfile
 
-data = 'Hello world'
-size = 256
+data = 'Fractal Entropy'
+size = 1024
 
 myhash = VisualHash.Flag
 myhash = VisualHash.TFlag
@@ -20,7 +20,7 @@ use = 'old'
 use = 'new'
 use = 'both'
 
-todo = ['old', 'fractal ', 'optimized']
+todo = ['fractal ', 'optimized']
 
 timereport = ''
 
@@ -37,8 +37,6 @@ if 'fractal' in todo:
         s = pstats.Stats("pure.prof")
         s.strip_dirs().sort_stats("time").print_stats(10)
 
-    # print '\nworking on pure python fractal'
-    # print '=============================='
     before = time.clock()
     img = VisualHash.Fractal(VisualHash.StrongRandom(data), size)
     after = time.clock()
