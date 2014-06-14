@@ -294,9 +294,10 @@ cpdef Image(random, int size):
 
     for i in range(img.size[0]):    # for every pixel:
         for j in range(img.size[1]):
+            # set the colour accordingly
             pixels[i,j] = (int(256*colors[0*(size*size) + i*size + j]),
                            int(256*colors[1*(size*size) + i*size + j]),
                            int(256*colors[2*(size*size) + i*size + j]),
-                           int(256*colors[3*(size*size) + i*size + j])) # set the colour accordingly
+                           int(256*colors[3*(size*size) + i*size + j]))
     PyMem_Free(colors)
     return img

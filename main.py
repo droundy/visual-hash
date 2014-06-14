@@ -44,7 +44,7 @@ class NiceImage(Image):
         if kind == 'tflag':
             hasher = VisualHash.TFlag
         if kind == 'fractal':
-            hasher = VisualHash.OldFractal
+            hasher = VisualHash.OptimizedFractal
         im = hasher(VisualHash.StrongRandom(self.text), sz)
         texture = Texture.create(size=(sz, sz))
         texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')

@@ -14,7 +14,6 @@ myhash = VisualHash.Flag
 myhash = VisualHash.TFlag
 myhash = VisualHash.RandomArt
 myhash = VisualHash.Identicon
-myhash = VisualHash.OldFractal
 myhash = VisualHash.Fractal
 
 use = 'old'
@@ -45,25 +44,6 @@ if 'fractal' in todo:
     after = time.clock()
     timereport += '\npure python fractal algorithm took %g seconds' % (after - before)
     img.save('image.png')
-
-if 'old' in todo:
-    if doprofile:
-        print '\nworking on old fractal'
-        print '======================'
-
-        before = time.clock()
-        cProfile.runctx("VisualHash.OldFractal(VisualHash.StrongRandom(data), size)",
-                        globals(), locals(), "old.prof")
-        after = time.clock()
-        timereport += '\nprofiling old fractal algorithm took %g seconds' % (after - before)
-        s = pstats.Stats("old.prof")
-        s.strip_dirs().sort_stats("time").print_stats(10)
-
-    before = time.clock()
-    img = VisualHash.OldFractal(VisualHash.StrongRandom(data), size)
-    after = time.clock()
-    timereport += '\nold fractal algorithm took %g seconds' % (after - before)
-    img.save('oldimage.png')
 
 if 'optimized' in todo:
     if doprofile:
