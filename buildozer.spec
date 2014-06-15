@@ -32,7 +32,7 @@ version.filename = %(source.dir)s/main.py
 #version = 0.0.0
 
 # (list) Application requirements
-requirements = pycrypto,pil,kivy,docutils
+requirements = pycrypto,pil,kivy,docutils,buildozerfractals
 
 # (list) Garden requirements
 #garden_requirements =

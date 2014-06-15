@@ -8,3 +8,6 @@ build
 _build
 *.egg-info
 *.prof
+.buildozer
+*.so
+bin
