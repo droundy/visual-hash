@@ -14,7 +14,7 @@ import Color
 # identical image for a given resolution.
 cdef struct QuickRandom:
   unsigned int m_w, m_z
-cdef unsigned int quickrand32(QuickRandom *s):
+cdef unsigned int quickrand32(QuickRandom *s) nogil:
     s.m_z = 36969 * (s.m_z & 65535) + (s.m_z >> 16)
     s.m_w = 18000 * (s.m_w & 65535) + (s.m_w >> 16)
     return (s.m_z << 16) + s.m_w  # 32-bit result
@@ -45,7 +45,7 @@ cdef ColorTransform MakeColorTransform(random):
     out.B /= m
     return out
 
-cdef Point colorTransform(ColorTransform c, Point p):
+cdef Point colorTransform(ColorTransform c, Point p) nogil:
     p.R = (c.A*c.R + p.A*p.R)/(c.A + p.A)
     p.G = (c.A*c.G + p.A*p.G)/(c.A + p.A)
     p.B = (c.A*c.B + p.A*p.B)/(c.A + p.A)
@@ -73,7 +73,7 @@ cdef Affine MakeAffine(random):
     a.Oy = random.gauss(0, translation_scale)
     return a
 
-cdef Point affineTransform(Affine a, Point p):
+cdef Point affineTransform(Affine a, Point p) nogil:
     cdef Point out = colorTransform(a.c, p)
     p.x -= a.Ox
     p.y -= a.Oy
@@ -97,7 +97,7 @@ cdef Fancy MakeFancy(random):
     f.bumps = random.randint(1, 4)
     return f
 
-cdef Point fancyTransform(Fancy f, Point p):
+cdef Point fancyTransform(Fancy f, Point p) nogil:
     cdef Point out = affineTransform(f.a, p)
     cdef Point nex = out
     cdef double r = sqrt(out.x*out.x + out.y*out.y)
@@ -138,7 +138,7 @@ cdef Symmetry MakeSymmetry(random):
     # print 'origin', s.a.Ox, s.a.Oy
     return s
 
-cdef Point symmetryTransform(Symmetry s, Point p):
+cdef Point symmetryTransform(Symmetry s, Point p) nogil:
     cdef double px = p.x
     cdef double py = p.y
     px -= s.a.Ox
@@ -173,13 +173,13 @@ cdef CMultiple MakeCMultiple(random):
     m.Ntot = m.N*m.s.Nsym
     return m
 
-cdef Point multipleTransform(CMultiple m, Point p, QuickRandom *r):
+cdef Point multipleTransform(CMultiple m, Point p, QuickRandom *r) nogil:
     cdef int i = quickrand32(r) % m.Ntot
     if i < m.N:
         return fancyTransform(m.t[i], p)
     return symmetryTransform(m.s, p)
 
-cdef place_point(double *h, Point p, double roundedness, double scaleup, int size):
+cdef void place_point(double *h, Point p, double roundedness, double scaleup, int size) nogil:
     cdef double x = p.x*scaleup
     cdef double y = p.y*scaleup
     cdef int ix = <int>((x/sqrt(x*x + roundedness*y*y + 1)+1)/2*size)
@@ -198,15 +198,16 @@ cdef Simulate(double *h, CMultiple t, Point p, int size):
     cdef double scale_up_by = 1.0
     r.m_w = 1
     r.m_z = 2
-    cdef int which
-    for i in xrange(4*size*size):
-        place_point(h, p, t.roundedness, scale_up_by, size)
-        which = quickrand32(&r) % t.Ntot
-        if which < t.N:
-            p = fancyTransform(t.t[which], p)
-        else:
-            p = symmetryTransform(t.s, p)
-        # p = multipleTransform(t, p, &r)
+    cdef int which, i
+    with nogil:
+        for i in range(4*size*size):
+            place_point(h, p, t.roundedness, scale_up_by, size)
+            which = quickrand32(&r) % t.Ntot
+            if which < t.N:
+                p = fancyTransform(t.t[which], p)
+            else:
+                p = symmetryTransform(t.s, p)
+            # p = multipleTransform(t, p, &r)
     cdef double meandist = 0
     cdef double norm = 0
     cdef double xx, yy
@@ -221,14 +222,15 @@ cdef Simulate(double *h, CMultiple t, Point p, int size):
     meandist /= norm
     # print 'meandist is', meandist
     scale_up_by = 1.0/meandist
-    for i in xrange(100*size*size):
-        place_point(h, p, t.roundedness, scale_up_by, size)
-        which = quickrand32(&r) % t.Ntot
-        if which < t.N:
-            p = fancyTransform(t.t[which], p)
-        else:
-            p = symmetryTransform(t.s, p)
-        # p = multipleTransform(t, p, &r)
+    with nogil:
+        for i in range(100*size*size):
+            place_point(h, p, t.roundedness, scale_up_by, size)
+            which = quickrand32(&r) % t.Ntot
+            if which < t.N:
+                p = fancyTransform(t.t[which], p)
+            else:
+                p = symmetryTransform(t.s, p)
+            # p = multipleTransform(t, p, &r)
 
 cdef get_colors(double *img, double *h, int size):
     cdef double maxa = 0
