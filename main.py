@@ -7,7 +7,9 @@
 __version__ = '0.0.0'
 
 import os, sys, inspect
+# from multiprocessing import Process, Queue
 
+from kivy.clock import Clock
 from kivy.metrics import sp
 from kivy.app import App
 from kivy.graphics.texture import Texture
@@ -31,13 +33,56 @@ class Matching(BoxLayout):
 class Memory(BoxLayout):
     pass
 
+# class ImageUpdater(Process):
+#     def __init__(self, text, hasher, q, stop, minsize, maxsize):
+#         super(ImageUpdater, self).__init__()
+#         self.text = text
+#         self.minsize = minsize
+#         self.maxsize = maxsize
+#         self.size = minsize
+#         self.hasher = hasher
+#         self.q = q
+#         self.stop = stop
+#         self.start()
+#     def run(self):
+#         sz = self.minsize
+#         while sz <= self.maxsize:
+#             try:
+#                 self.stop.get(False)
+#                 return
+#             except:
+#                 pass # we have not been asked to stop, yet!
+#             print 'running', self.text, 'with sz', sz
+#             im = self.hasher(VisualHash.StrongRandom(self.text), sz)
+#             texture = Texture.create(size=(sz, sz))
+#             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+#             print (self.text, sz)
+#             self.q.put((self.text, sz, im.tostring()))
+#             sz *= 2
+
 class NiceImage(Image):
     text = StringProperty('hi')
     # kind = ConfigParserProperty('', 'game', 'hashtype', 'example')
     def __init__(self, **kw):
         super(NiceImage, self).__init__(**kw)
+        # self.q = Queue()
+        # self.stop = Queue()
         self.on_text()
+    #     Clock.schedule_interval(self.read_q, 0.25)
+    # def read_q(self, dt):
+    #     try:
+    #         t, sz, im = self.q.get(False)
+    #         while t != self.text:
+    #             t, sz, im = self.q.get(False)
+    #         print 'read', (t, sz)
+    #         texture = Texture.create(size=(sz, sz))
+    #         texture.blit_buffer(im, colorfmt='rgba', bufferfmt='ubyte')
+    #         self.texture = texture
+    #     except:
+    #         pass
     def on_text(self, *args):
+        # self.stop.put('stop!')
+        # self.stop = Queue()
         sz = 64
         kind = app.config.getdefault('game', 'hashtype', 'oops')
         hasher = VisualHash.Flag
@@ -49,6 +94,7 @@ class NiceImage(Image):
         texture = Texture.create(size=(sz, sz))
         texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
         self.texture = texture
+        # ImageUpdater(self.text, hasher, self.q, self.stop, 32, 512)
 
 class MainApp(App):
     def build_config(self, config):
