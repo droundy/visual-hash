@@ -20,12 +20,22 @@
     left_button: left_button
     right_button: right_button
     img: img
+    original: original
     orientation: 'vertical'
+    have_started: False
     NiceImage:
         size_hint: 1, 1
         allow_stretch: True
         text: 'matching1'
+        id: original
+    Image:
+        size_hint: 1, 1
+        allow_stretch: True
+        text: 'matching1'
         id: img
+        x: root.width
+        num: 0
+        have_next: False
     BoxLayout:
         size_hint: 1, None
         height: sp(80)

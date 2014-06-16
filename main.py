@@ -15,6 +15,7 @@ from kivy.metrics import sp
 from kivy.app import App
 from kivy.graphics.texture import Texture
 from kivy.uix.image import Image
+from kivy.animation import Animation
 from kivy.uix.settings import Settings
 from kivy.uix.boxlayout import BoxLayout
 import kivy.uix.settings as kivysettings
@@ -28,17 +29,53 @@ import VisualHash
 class Home(TabbedPanel):
     pass
 
+animtime = 1.0
 class Matching(BoxLayout):
+    def NextImg(self):
+        self.img.frac = 0.1
+        self.img.num += 1
     def Reset(self):
         self.left_button.disabled = True
         self.right_button.text = 'I remember this'
-        self.img.frac = 0.0
+        anim = Animation(x=self.width, duration=animtime)
+        anim.start(self.img)
+        anim = Animation(x=0, t='in_back', duration=animtime)
+        anim.start(self.original)
+        #Clock.schedule_once(lambda dt: self.NextImg(), animtime)
+
+        # pick the next image to test against, and start working on
+        # the hashing.
+        kind = app.config.getdefault('game', 'hashtype', 'oops')
+        hasher = VisualHash.Flag
+        if kind == 'tflag':
+            hasher = VisualHash.TFlag
+        if kind == 'fractal':
+            hasher = VisualHash.OptimizedFractal
+        rnd = VisualHash.BitTweakedRandom(self.original.text,0.01, self.img.num,self.img.num)
+        self.img.num += 1
+        if VisualHash.StrongRandom(self.original.text+'hi'+str(self.img.num)).random() < 0.25:
+            rnd = VisualHash.StrongRandom(self.original.text)
+        self.img.have_next = False
+        NextImage(self.img, 512, rnd, hasher)
     def Start(self):
-        print 'Start'
+        if not self.have_started:
+            self.have_started = True
+            self.Reset()
+        if self.img.have_next:
+            im = self.img.next[0]
+            texture = Texture.create(size=(512, 512))
+            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            self.img.texture = texture
+            self.img.have_next = False
+        else:
+            Clock.schedule_once(lambda dt: self.Start(), 0.25)
+            return
         self.left_button.disabled = False
         self.right_button.text = 'Same'
-        self.img.frac = 0.01
-        self.img.num += 1
+        anim = Animation(x=0, t='in_back', duration=animtime)
+        anim.start(self.img)
+        anim = Animation(x=-self.width, duration=animtime)
+        anim.start(self.original)
     def ItMatches(self):
         self.Reset()
     def ItDiffers(self):
@@ -46,6 +83,22 @@ class Matching(BoxLayout):
 
 class Memory(BoxLayout):
     pass
+
+class NextImage(Thread):
+    def __init__(self, whosenext, size, rnd, hasher):
+        super(NextImage, self).__init__()
+        self.size = size
+        self.rnd = rnd
+        self.next = whosenext
+        self.hasher = hasher
+        self.start()
+    def run(self):
+        sz = self.size
+        im = self.hasher(self.rnd, sz)
+        texture = Texture.create(size=(sz, sz))
+        texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+        self.next.next = [im]
+        self.next.have_next = True
 
 class ImageUpdater(Thread):
     def __init__(self, text, hasher, q, stop, minsize, maxsize, frac=0.0, num=1):
@@ -73,8 +126,6 @@ class ImageUpdater(Thread):
             if VisualHash.StrongRandom(self.text+'hi'+str(self.num)).random() < 0.25:
                 rnd = VisualHash.StrongRandom(self.text)
             im = self.hasher(rnd, sz)
-            texture = Texture.create(size=(sz, sz))
-            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
             print (self.text, self.frac, self.num, sz)
             self.q.put((sz, im.tostring()))
             sz *= 2
@@ -113,8 +164,7 @@ class NiceImage(Image):
             hasher = VisualHash.TFlag
         if kind == 'fractal':
             hasher = VisualHash.OptimizedFractal
-        ImageUpdater(self.text, hasher, self.q, self.stop, 32, 1024, self.frac, self.num)
-        self.q.get()
+        ImageUpdater(self.text, hasher, self.q, self.stop, 64, 512, self.frac, self.num)
 
 class MainApp(App):
     def build_config(self, config):
