@@ -29,7 +29,17 @@ class Home(TabbedPanel):
     pass
 
 class Matching(BoxLayout):
-    pass
+    def Start(self):
+        print 'Start'
+        self.left_button.disabled = False
+        self.right_button.text = 'Same'
+        self.img.text = 'next'
+    def ItMatches(self):
+        print 'Matches'
+        self.left_button.disabled = False
+    def ItDiffers(self):
+        print 'Differs'
+        self.left_button.disabled = False
 
 class Memory(BoxLayout):
     pass
@@ -95,7 +105,7 @@ class NiceImage(Image):
         texture = Texture.create(size=(sz, sz))
         texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
         self.texture = texture
-        ImageUpdater(self.text, hasher, self.q, self.stop, 32, 128)
+        ImageUpdater(self.text, hasher, self.q, self.stop, 128, 1024)
 
 class MainApp(App):
     def build_config(self, config):

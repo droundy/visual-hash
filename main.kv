@@ -17,13 +17,27 @@
 
 
 <Matching>:
+    left_button: left_button
+    right_button: right_button
+    img: img
     orientation: 'vertical'
-    Label:
-        text: 'Matching stuff here'
-    TextInput:
-        text: 'Matching stuff here'
-    Label:
-        text: 'More matching stuff here'
+    NiceImage:
+        size_hint: 1, 1
+        allow_stretch: True
+        id: img
+    BoxLayout:
+        size_hint: 1, None
+        height: sp(80)
+        orientation: 'horizontal'
+        Button:
+            id: left_button
+            text: 'Different'
+            disabled: True
+            on_press: root.ItDiffers()
+        Button:
+            id: right_button
+            text: 'I remember this'
+            on_press: root.ItMatches() if self.text == 'Same' else root.Start()
 
 <Home>:
     #size_hint: .5, .5
