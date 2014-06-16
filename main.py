@@ -73,7 +73,7 @@ class ImageUpdater(Thread):
                                                       self.num,self.num), sz)
             texture = Texture.create(size=(sz, sz))
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
-            print (self.text, sz)
+            print (self.text, self.frac, self.num, sz)
             self.q.put((self.text, self.frac, self.num, sz, im.tostring()))
             sz *= 2
 
@@ -107,6 +107,7 @@ class NiceImage(Image):
     def on_text(self, *args):
         self.stop.put('stop!')
         self.stop = Queue()
+        self.q = Queue()
         kind = app.config.getdefault('game', 'hashtype', 'oops')
         hasher = VisualHash.Flag
         if kind == 'tflag':
