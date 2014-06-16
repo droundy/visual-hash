@@ -1,6 +1,6 @@
 #cy  thon: nonecheck=True
 #        ^^^ Turns o  n nonecheck globally
-# cython: profile=True
+# cy thon: profile=True
 
 from libc.math cimport log, sqrt, cos, sin, atan2, M_PI
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
@@ -232,12 +232,13 @@ cdef Simulate(double *h, CMultiple t, Point p, int size):
                 p = symmetryTransform(t.s, p)
             # p = multipleTransform(t, p, &r)
 
-cdef get_colors(double *img, double *h, int size):
+cdef void get_colors(double *img, double *h, int size) nogil:
     cdef double maxa = 0
     cdef double mean_nonzero_a = 0
     cdef int num_nonzero = 0
     cdef double mina = 1e300
-    cdef double a
+    cdef double a, v, blackrad
+    cdef int i, j, di, ii, jj, djmax, dj
     for i in xrange(size):
         for j in xrange(size):
             a = h[0*(size*size) + i*size + j]
@@ -270,12 +271,12 @@ cdef get_colors(double *img, double *h, int size):
         for j in xrange(size):
             if img[3*(size*size) + i*size + j] == 0:
                 blackrad = 2.0
-                for di in xrange(-int(blackrad),int(blackrad)+1,1):
+                for di in xrange(-<int>(blackrad),<int>(blackrad)+1,1):
                     ii = i + di
                     if ii >= 0 and ii < size:
-                        djmax = int(sqrt((blackrad+.5)*(blackrad+.5) - di*di))
+                        djmax = <int>(sqrt((blackrad+.5)*(blackrad+.5) - di*di))
                         for dj in xrange(-djmax,djmax+1,1):
-                            jj = j + dj
+                            jj = int(j + dj)
                             d = sqrt(di*di + dj*dj)
                             if jj >= 0 and jj < size and h[3*(size*size) + ii*size + jj] > 0:
                                 v = (1.0 + blackrad - d)/blackrad
