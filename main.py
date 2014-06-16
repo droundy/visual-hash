@@ -69,12 +69,14 @@ class ImageUpdater(Thread):
             except:
                 pass # we have not been asked to stop, yet!
             print 'running', self.text, 'with sz', sz
-            im = self.hasher(VisualHash.TweakedRandom(self.text,self.frac,
-                                                      self.num,self.num), sz)
+            rnd = VisualHash.TweakedRandom(self.text,self.frac, self.num,self.num)
+            if VisualHash.StrongRandom(self.text+'hi'+str(self.num)).random() < 0.5:
+                rnd = VisualHash.StrongRandom(self.text)
+            im = self.hasher(rnd, sz)
             texture = Texture.create(size=(sz, sz))
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
             print (self.text, self.frac, self.num, sz)
-            self.q.put((self.text, self.frac, self.num, sz, im.tostring()))
+            self.q.put((sz, im.tostring()))
             sz *= 2
 
 class NiceImage(Image):
@@ -91,10 +93,7 @@ class NiceImage(Image):
     def read_q(self, dt):
         try:
             #print 'trying with', self.text, self.frac, self.num
-            t, frac, num, sz, im = self.q.get(False)
-            while t != self.text and frac != self.frac and num != self.num:
-                t, frac, num, sz, im = self.q.get(False)
-            print 'read', (t, frac, num, sz)
+            sz, im = self.q.get(False)
             texture = Texture.create(size=(sz, sz))
             texture.blit_buffer(im, colorfmt='rgba', bufferfmt='ubyte')
             self.texture = texture
