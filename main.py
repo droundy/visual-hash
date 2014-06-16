@@ -29,20 +29,20 @@ class Home(TabbedPanel):
     pass
 
 class Matching(BoxLayout):
+    def Reset(self):
+        self.left_button.disabled = True
+        self.right_button.text = 'I remember this'
+        self.img.frac = 0.0
     def Start(self):
         print 'Start'
         self.left_button.disabled = False
         self.right_button.text = 'Same'
-        self.img.frac = 0.1
+        self.img.frac = 0.01
         self.img.num += 1
     def ItMatches(self):
-        print 'Matches'
-        self.left_button.disabled = False
-        self.img.num += 1
+        self.Reset()
     def ItDiffers(self):
-        print 'Differs'
-        self.left_button.disabled = False
-        self.img.num += 1
+        self.Reset()
 
 class Memory(BoxLayout):
     pass
@@ -69,8 +69,8 @@ class ImageUpdater(Thread):
             except:
                 pass # we have not been asked to stop, yet!
             print 'running', self.text, 'with sz', sz
-            rnd = VisualHash.TweakedRandom(self.text,self.frac, self.num,self.num)
-            if VisualHash.StrongRandom(self.text+'hi'+str(self.num)).random() < 0.5:
+            rnd = VisualHash.BitTweakedRandom(self.text,self.frac, self.num,self.num)
+            if VisualHash.StrongRandom(self.text+'hi'+str(self.num)).random() < 0.25:
                 rnd = VisualHash.StrongRandom(self.text)
             im = self.hasher(rnd, sz)
             texture = Texture.create(size=(sz, sz))

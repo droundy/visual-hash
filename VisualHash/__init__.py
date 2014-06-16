@@ -57,6 +57,9 @@ def StrongRandom(x):
 def TweakedRandom(string, fraction, seed1, seed2):
     return random.TweakedRandom(string, fraction, seed1, seed2)
 
+def BitTweakedRandom(string, fraction, seed1, seed2):
+    return random.BitTweakedRandom(string, fraction, seed1, seed2)
+
 def Fractal(random = StrongRandom(""), size = 128):
     """
     Create a hash as a fractal flame.

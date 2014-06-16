@@ -112,3 +112,35 @@ class TweakedRandom(StrongRandom):
         if self.tweaker.random() < self.fraction:
             return self.tweakness.random32()
         return v
+
+class BitTweakedRandom(StrongRandom):
+    """
+    A version of the StrongRandom number generator that is "tweaked"
+    bitwise.
+
+    This enables changing just some of the output bits, in a
+    pseudorandom manner.  The idea is to be able to make small changes
+    to the random number stream in order to investigate these sorts of
+    effects.
+    """
+    def __init__(self, string, fraction, seed1, seed2):
+        """
+        Create a tweaked random number generator.
+
+        string - the "untweaked" seed
+        fraction - the fraction of bits that should be altered
+        seed - a seed that determines which bits to modify
+        """
+        self._random = StrongRandom(string)
+        self.fraction = fraction
+        self.tweaker = StrongRandom(seed1)
+        self.tweakness = StrongRandom(seed2)
+        self.gauss_next = None
+    def random32(self):
+        """Generate a random 32-bit integer."""
+        v = self._random.random32()
+        for i in range(32):
+            if self.tweaker.random() < self.fraction:
+                if self.tweakness.random() < 0.5:
+                    v = v ^ (1 << i)
+        return v
