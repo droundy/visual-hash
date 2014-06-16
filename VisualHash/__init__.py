@@ -48,18 +48,14 @@ except:
 
 from VisualHash import random
 
-# annoying imports to enable "random" duplication without strange
-# __init__ error.
-from math import sqrt, log, exp, sin, cos, pi
-
 import random, struct
 from Crypto.Hash import SHA512 as _hash
 
 def StrongRandom(x):
     return random.StrongRandom(x)
 
-def TweakedRandom(x, string, fraction, seed1, seed2):
-    return random.TweakedRandom(x, string, fraction, seed1, seed2)
+def TweakedRandom(string, fraction, seed1, seed2):
+    return random.TweakedRandom(string, fraction, seed1, seed2)
 
 def Fractal(random = StrongRandom(""), size = 128):
     """

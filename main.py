@@ -20,7 +20,7 @@ from kivy.uix.boxlayout import BoxLayout
 import kivy.uix.settings as kivysettings
 from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelHeader
 from kivy import platform
-from kivy.properties import StringProperty #, ConfigParserProperty
+from kivy.properties import StringProperty, NumericProperty #, ConfigParserProperty
 import settings as mysettings
 
 import VisualHash
@@ -33,19 +33,22 @@ class Matching(BoxLayout):
         print 'Start'
         self.left_button.disabled = False
         self.right_button.text = 'Same'
-        self.img.text = 'next'
+        self.img.frac = 0.1
+        self.img.num += 1
     def ItMatches(self):
         print 'Matches'
         self.left_button.disabled = False
+        self.img.num += 1
     def ItDiffers(self):
         print 'Differs'
         self.left_button.disabled = False
+        self.img.num += 1
 
 class Memory(BoxLayout):
     pass
 
 class ImageUpdater(Thread):
-    def __init__(self, text, hasher, q, stop, minsize, maxsize):
+    def __init__(self, text, hasher, q, stop, minsize, maxsize, frac=0.0, num=1):
         super(ImageUpdater, self).__init__()
         self.text = text
         self.minsize = minsize
@@ -54,6 +57,8 @@ class ImageUpdater(Thread):
         self.hasher = hasher
         self.q = q
         self.stop = stop
+        self.frac = frac
+        self.num = num
         self.start()
     def run(self):
         sz = self.minsize
@@ -64,15 +69,18 @@ class ImageUpdater(Thread):
             except:
                 pass # we have not been asked to stop, yet!
             print 'running', self.text, 'with sz', sz
-            im = self.hasher(VisualHash.StrongRandom(self.text), sz)
+            im = self.hasher(VisualHash.TweakedRandom(self.text,self.frac,
+                                                      self.num,self.num), sz)
             texture = Texture.create(size=(sz, sz))
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
             print (self.text, sz)
-            self.q.put((self.text, sz, im.tostring()))
+            self.q.put((self.text, self.frac, self.num, sz, im.tostring()))
             sz *= 2
 
 class NiceImage(Image):
     text = StringProperty('hi')
+    num = NumericProperty(0)
+    frac = NumericProperty(0)
     # kind = ConfigParserProperty('', 'game', 'hashtype', 'example')
     def __init__(self, **kw):
         super(NiceImage, self).__init__(**kw)
@@ -82,30 +90,31 @@ class NiceImage(Image):
         Clock.schedule_interval(self.read_q, 0.25)
     def read_q(self, dt):
         try:
-            t, sz, im = self.q.get(False)
-            while t != self.text:
-                t, sz, im = self.q.get(False)
-            print 'read', (t, sz)
+            #print 'trying with', self.text, self.frac, self.num
+            t, frac, num, sz, im = self.q.get(False)
+            while t != self.text and frac != self.frac and num != self.num:
+                t, frac, num, sz, im = self.q.get(False)
+            print 'read', (t, frac, num, sz)
             texture = Texture.create(size=(sz, sz))
             texture.blit_buffer(im, colorfmt='rgba', bufferfmt='ubyte')
             self.texture = texture
         except:
             pass
+    def on_num(self, *args):
+        self.on_text()
+    def on_frac(self, *args):
+        self.on_text()
     def on_text(self, *args):
         self.stop.put('stop!')
         self.stop = Queue()
-        sz = 64
         kind = app.config.getdefault('game', 'hashtype', 'oops')
         hasher = VisualHash.Flag
         if kind == 'tflag':
             hasher = VisualHash.TFlag
         if kind == 'fractal':
             hasher = VisualHash.OptimizedFractal
-        im = hasher(VisualHash.StrongRandom(self.text), sz)
-        texture = Texture.create(size=(sz, sz))
-        texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
-        self.texture = texture
-        ImageUpdater(self.text, hasher, self.q, self.stop, 128, 1024)
+        ImageUpdater(self.text, hasher, self.q, self.stop, 32, 1024, self.frac, self.num)
+        self.q.get()
 
 class MainApp(App):
     def build_config(self, config):
