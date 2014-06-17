@@ -27,14 +27,48 @@ import settings as mysettings
 import VisualHash
 
 class Home(TabbedPanel):
-    pass
+    def on_current_tab(self, *args):
+        try:
+            args[1].content.on_select()
+        except:
+            pass
+    def on_current(self, *args):
+        print 'current changed!', args
 
 animtime = 1.0
 class Matching(BoxLayout):
+    def get_hasher(self):
+        # pick the next image to test against, and start working on
+        # the hashing.
+        kind = app.config.getdefault('game', 'hashtype', 'oops')
+        hasher = VisualHash.Flag
+        if kind == 'tflag':
+            hasher = VisualHash.TFlag
+        if kind == 'fractal':
+            hasher = VisualHash.OptimizedFractal
+        return hasher
     def NextImg(self):
         self.img.frac = 0.1
         self.img.num += 1
+    def on_select(self, *args):
+        self.left_button.disabled = True
+        self.right_button.text = 'I remember this'
+        self.original.x = 0
+        self.img.x = self.width
+        hasher = self.get_hasher()
+        self.original.text += '!'
+        rnd = VisualHash.StrongRandom(self.original.text)
+        NextImage(self.original, 512, rnd, hasher)
+        self.Reset()
     def Reset(self):
+        if self.original.have_next:
+            im = self.original.next[0]
+            texture = Texture.create(size=(512, 512))
+            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            self.original.texture = texture
+        else:
+            Clock.schedule_once(lambda dt: self.Reset(), 0.25)
+            return
         self.left_button.disabled = True
         self.right_button.text = 'I remember this'
         anim = Animation(x=self.width, duration=animtime)
@@ -46,16 +80,11 @@ class Matching(BoxLayout):
         # pick the next image to test against, and start working on
         # the hashing.
         kind = app.config.getdefault('game', 'hashtype', 'oops')
-        hasher = VisualHash.Flag
-        if kind == 'tflag':
-            hasher = VisualHash.TFlag
-        if kind == 'fractal':
-            hasher = VisualHash.OptimizedFractal
-        rnd = VisualHash.BitTweakedRandom(self.original.text,0.01, self.img.num,self.img.num)
+        hasher = self.get_hasher()
+        rnd = VisualHash.BitTweakedRandom(self.original.text,0.1, self.img.num,self.img.num)
         self.img.num += 1
         if VisualHash.StrongRandom(self.original.text+'hi'+str(self.img.num)).random() < 0.25:
             rnd = VisualHash.StrongRandom(self.original.text)
-        self.img.have_next = False
         NextImage(self.img, 512, rnd, hasher)
     def Start(self):
         if not self.have_started:
@@ -90,6 +119,7 @@ class NextImage(Thread):
         self.size = size
         self.rnd = rnd
         self.next = whosenext
+        self.next.have_next = False
         self.hasher = hasher
         self.start()
     def run(self):
