@@ -29,9 +29,10 @@ import VisualHash
 class Home(TabbedPanel):
     def on_current_tab(self, *args):
         try:
-            args[1].content.on_select()
+            args[1].content.on_select
         except:
-            pass
+            return
+        args[1].content.on_select()
     def on_current(self, *args):
         print 'current changed!', args
 
@@ -47,9 +48,16 @@ class Matching(BoxLayout):
         if kind == 'fractal':
             hasher = VisualHash.OptimizedFractal
         return hasher
-    def NextImg(self):
-        self.img.frac = 0.1
+    def begin_next_img(self):
+        # pick the next image to test against, and start working on
+        # the hashing.
+        kind = app.config.getdefault('game', 'hashtype', 'oops')
+        hasher = self.get_hasher()
+        rnd = VisualHash.BitTweakedRandom(self.original.text,0.1, self.img.num,self.img.num)
         self.img.num += 1
+        if VisualHash.StrongRandom(self.original.text+'hi'+str(self.img.num)).random() < 0.25:
+            rnd = VisualHash.StrongRandom(self.original.text)
+        NextImage(self.img, 512, rnd, hasher)
     def on_select(self, *args):
         self.left_button.disabled = True
         self.right_button.text = 'I remember this'
@@ -58,7 +66,11 @@ class Matching(BoxLayout):
         hasher = self.get_hasher()
         self.original.text += '!'
         rnd = VisualHash.StrongRandom(self.original.text)
+        self.img.x = self.width
         NextImage(self.original, 512, rnd, hasher)
+        self.img.x = self.width
+        self.begin_next_img()
+        self.img.x = self.width
         self.Reset()
     def Reset(self):
         if self.original.have_next:
@@ -75,27 +87,13 @@ class Matching(BoxLayout):
         anim.start(self.img)
         anim = Animation(x=0, t='in_back', duration=animtime)
         anim.start(self.original)
-        #Clock.schedule_once(lambda dt: self.NextImg(), animtime)
-
-        # pick the next image to test against, and start working on
-        # the hashing.
-        kind = app.config.getdefault('game', 'hashtype', 'oops')
-        hasher = self.get_hasher()
-        rnd = VisualHash.BitTweakedRandom(self.original.text,0.1, self.img.num,self.img.num)
-        self.img.num += 1
-        if VisualHash.StrongRandom(self.original.text+'hi'+str(self.img.num)).random() < 0.25:
-            rnd = VisualHash.StrongRandom(self.original.text)
-        NextImage(self.img, 512, rnd, hasher)
     def Start(self):
-        if not self.have_started:
-            self.have_started = True
-            self.Reset()
         if self.img.have_next:
             im = self.img.next[0]
             texture = Texture.create(size=(512, 512))
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
             self.img.texture = texture
-            self.img.have_next = False
+            self.begin_next_img()
         else:
             Clock.schedule_once(lambda dt: self.Start(), 0.25)
             return
