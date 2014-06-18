@@ -24,7 +24,6 @@ class StrongRandom(object):
         self.string = str(string)
         self.hash = _hash.new(self.string).digest()
         self.bits = _hash.new(self.string).digest()
-        self.gauss_next = None
         self.bits_used = 0
     def random32(self):
         """ Generate a random 32-bit integer. """
@@ -64,25 +63,16 @@ class StrongRandom(object):
 
         """
         return -log(1.0 - self.random())/lambd
-    def gauss(self, mu, sigma):
-        """Gaussian distribution.
+    def signed_expovariate(self, mean, lambd):
+        """Exponential distribution with mean value.
 
-        mu is the mean, and sigma is the standard deviation.  This is
-        slightly faster than the normalvariate() function.
-
-        Not thread-safe without a lock around calls.
+        mean is the mean, and lambd is the width.
 
         """
-        random = self.random
-        z = self.gauss_next
-        self.gauss_next = None
-        if z is None:
-            x2pi = random() * 2*pi
-            g2rad = sqrt(-2.0 * log(1.0 - random()))
-            z = cos(x2pi) * g2rad
-            self.gauss_next = sin(x2pi) * g2rad
-
-        return mu + z*sigma
+        x = self.expovariate(lambd)
+        if self.random() < 0.5:
+            x = -x
+        return mean + x
 
 class TweakedRandom(StrongRandom):
     """

@@ -155,7 +155,7 @@ class IdenticonRendererBase(object):
         middle, corner, side, foreColor, backColor = self.decode(self.code)
 
         # make image        
-        image = Image.new("RGB", (size * 3, size * 3))
+        image = Image.new("RGBA", (size * 3, size * 3))
         draw = ImageDraw.Draw(image)
         
         # fill background

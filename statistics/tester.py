@@ -6,6 +6,8 @@ import numpy as np
 from numpy import random
 from matplotlib import pyplot as plt
 
+import PBA
+
 def mytanh(mean, width):
     def prob(x):
         return math.atan((x - mean)/width)/math.pi + 0.5
@@ -17,48 +19,12 @@ def mytanh_random(mean, width):
         return random.random() > f(x)
     return prob
 
-N = 500
-out = np.zeros(N)
-x0 = 50
-width = 10
+x0 = 30
+width = 2
 f = mytanh(x0, width)
 rnd = mytanh_random(x0, width)
 
-# see dissertation http://people.orie.cornell.edu/shane/theses/ThesisRolfWaeber.pdf
-
-def ProperMedian(vals):
-    tot = np.sum(vals)
-    sofar = 0
-    for i in range(len(vals)):
-        sofar += vals[i]
-        if sofar > tot/2:
-            return i
-    return len(vals)-1
-
 default_Ntries = 20
-
-def PBA(f, lo, hi, Ntries = default_Ntries, dx = 0.01):
-    xs = np.arange(lo, hi, dx)
-    fguess = np.zeros_like(xs) + 1
-    guesses = np.zeros(Ntries)
-    for i in range(Ntries):
-        med = xs[ProperMedian(fguess)]
-        #print 'median', med
-        xtry = med
-        guesses[i] = xtry
-        good = f(xtry)
-        p = 0.9
-        q = 1 - p
-        F = np.cumsum(fguess)
-        F /= F[-1]
-        gamma = (1-F)*p + F*(1-p)
-        if good:
-            fguess[xs > xtry] *= p/gamma[xs > xtry]
-            fguess[xs < xtry] *= q/gamma[xs < xtry]
-        else:
-            fguess[xs < xtry] *= p/(1 - gamma[xs < xtry])
-            fguess[xs > xtry] *= q/(1 - gamma[xs > xtry])
-    return guesses, xs, fguess
 
 class MedianList(object):
     def __init__(self, mn, mx):
@@ -130,12 +96,12 @@ def PBA_continuum(f, lo, hi, Ntries = default_Ntries):
         #print ml
     return guesses
 
-out, xs, fguess = PBA(rnd, 0, 100)
+out, xs, fguess, med = PBA.PBA(rnd, 0, 100, default_Ntries)
+print 'answer:', med
 
-out_c = PBA_continuum(rnd, 0, 100)
+#out_c = PBA.PBA_continuum(rnd, 0, 100)
 
-print 'answer:', xs[ProperMedian(fguess)]
-print 'answer_c:', out_c[-1]
+#print 'answer_c:', out_c[-1]
 
 #plt.plot(out, 'r.')
 
@@ -146,16 +112,23 @@ plt.figure()
 #plt.plot(out_c, 'b-')
 plt.plot(out, 'r.')
 
-out = PBA(rnd, 0, 100)[0]
+out = PBA.PBA(rnd, 0, 100, default_Ntries)[0]
 print out[-1]
 plt.plot(out, 'g.')
 
-out = PBA(rnd, 0, 100)[0]
+out = PBA.PBA(rnd, 0, 100, default_Ntries)[0]
 plt.plot(out, 'b.')
 print out[-1]
 
-out = PBA(rnd, 0, 100)[0]
+out = PBA.PBA(rnd, 0, 100, default_Ntries)[0]
 plt.plot(out, 'c.')
+print out[-1]
+
+e = PBA.Estimator(0, 100, 0.01)
+for i in range(default_Ntries):
+    out[i] = e.median()
+    e.measured(out[i], rnd(out[i]))
+plt.plot(out, 'k+')
 print out[-1]
 
 

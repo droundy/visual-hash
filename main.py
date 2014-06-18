@@ -24,6 +24,8 @@ from kivy import platform
 from kivy.properties import StringProperty, NumericProperty #, ConfigParserProperty
 import settings as mysettings
 
+from statistics.PBA import Estimator
+
 import VisualHash
 
 class Home(TabbedPanel):
@@ -38,6 +40,9 @@ class Home(TabbedPanel):
 
 animtime = 1.0
 class Matching(BoxLayout):
+    bits = Estimator(0, 128, 0.1)
+    differs = False
+    next_differs = False
     def get_hasher(self):
         # pick the next image to test against, and start working on
         # the hashing.
@@ -47,18 +52,28 @@ class Matching(BoxLayout):
             hasher = VisualHash.TFlag
         if kind == 'fractal':
             hasher = VisualHash.OptimizedFractal
+        if kind == 'identicon':
+            hasher = VisualHash.Identicon
+        if kind == 'randomart':
+            hasher = VisualHash.RandomArt
         return hasher
     def begin_next_img(self):
         # pick the next image to test against, and start working on
         # the hashing.
         kind = app.config.getdefault('game', 'hashtype', 'oops')
         hasher = self.get_hasher()
-        rnd = VisualHash.BitTweakedRandom(self.original.text,0.1, self.img.num,self.img.num)
+        nbits = self.bits.median()
+        frac = 1 - 0.5**(1.0/nbits)
+        print 'nbits', nbits, 'frac', frac
+        rnd = VisualHash.BitTweakedRandom(self.original.text,frac, self.img.num,self.img.num)
+        self.next_differs = True
         self.img.num += 1
         if VisualHash.StrongRandom(self.original.text+'hi'+str(self.img.num)).random() < 0.25:
+            self.next_differs = False
             rnd = VisualHash.StrongRandom(self.original.text)
         NextImage(self.img, 512, rnd, hasher)
     def on_select(self, *args):
+        self.bits = Estimator(0, 128, 0.1)
         self.left_button.disabled = True
         self.right_button.text = 'I remember this'
         self.original.x = 0
@@ -73,9 +88,12 @@ class Matching(BoxLayout):
         self.img.x = self.width
         self.Reset()
     def Reset(self):
+        self.entropy_label.text = 'Entropy:  %.1f' % self.bits.median()
         if self.original.have_next:
+            self.differs = self.next_differs
             im = self.original.next[0]
-            texture = Texture.create(size=(512, 512))
+            self.original.current_im = im.tostring()
+            texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
             self.original.texture = texture
         else:
@@ -90,7 +108,8 @@ class Matching(BoxLayout):
     def Start(self):
         if self.img.have_next:
             im = self.img.next[0]
-            texture = Texture.create(size=(512, 512))
+            self.img.current_im = im.tostring()
+            texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
             self.img.texture = texture
             self.begin_next_img()
@@ -104,8 +123,20 @@ class Matching(BoxLayout):
         anim = Animation(x=-self.width, duration=animtime)
         anim.start(self.original)
     def ItMatches(self):
+        print 'same:', self.differs, self.img.current_im != self.original.current_im
+        if self.differs:
+            self.bits.measured(self.bits.median(), False)
+            print 'new bits:', self.bits.median()
+        else:
+            print 'Nice!'
         self.Reset()
     def ItDiffers(self):
+        print 'differs:', self.differs, self.img.current_im != self.original.current_im
+        if self.differs:
+            self.bits.measured(self.bits.median(), True)
+            print 'new bits:', self.bits.median()
+        else:
+            print 'Oops!'
         self.Reset()
 
 class Memory(BoxLayout):
@@ -123,7 +154,7 @@ class NextImage(Thread):
     def run(self):
         sz = self.size
         im = self.hasher(self.rnd, sz)
-        texture = Texture.create(size=(sz, sz))
+        texture = Texture.create(size=im.size)
         texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
         self.next.next = [im]
         self.next.have_next = True
@@ -192,6 +223,10 @@ class NiceImage(Image):
             hasher = VisualHash.TFlag
         if kind == 'fractal':
             hasher = VisualHash.OptimizedFractal
+        if kind == 'identicon':
+            hasher = VisualHash.Identicon
+        if kind == 'randomart':
+            hasher = VisualHash.RandomArt
         ImageUpdater(self.text, hasher, self.q, self.stop, 64, 512, self.frac, self.num)
 
 class MainApp(App):

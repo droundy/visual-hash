@@ -68,14 +68,14 @@ class Affine:
         # currently we always initialize pseudorandomly, but
         # eventually we'll want to generate this deterministically.
         self.theta = 2*pi*random.random()
-        self.compressme = random.gauss(0.8, 0.2)
+        self.compressme = random.signed_expovariate(0.8, 0.2)
         self.Mxx =  cos(self.theta)*self.compressme
         self.Mxy =  sin(self.theta)*self.compressme
         self.Myx = -sin(self.theta)*self.compressme
         self.Myy =  cos(self.theta)*self.compressme
         translation_scale = 0.8
-        self.Ox = random.gauss(0, translation_scale)
-        self.Oy = random.gauss(0, translation_scale)
+        self.Ox = random.signed_expovariate(0, translation_scale)
+        self.Oy = random.signed_expovariate(0, translation_scale)
     def Transform(self, p):
         out = self.c.Transform(p)
         p.x -= self.Ox
@@ -92,9 +92,9 @@ class Fancy:
     #int bumps
     def __init__(self, random):
         self.a = Affine(random)
-        self.spiralness = random.gauss(0, 3)
-        self.radius = random.gauss(.4, .2)
-        self.bounciness = random.gauss(2, 2)
+        self.spiralness = random.signed_expovariate(0, 3)
+        self.radius = random.signed_expovariate(.4, .2)
+        self.bounciness = random.signed_expovariate(2, 2)
         self.bumps = random.randint(1, 4)
     def Transform(self, p):
         out = self.a.Transform(p)
@@ -118,8 +118,8 @@ class Symmetry:
         theta = 2*pi*random.random()
         translation_scale = 0.1
         self.a = Affine(rzero())
-        self.a.Ox = random.gauss(0, translation_scale)
-        self.a.Oy = random.gauss(0, translation_scale)
+        self.a.Ox = random.signed_expovariate(0, translation_scale)
+        self.a.Oy = random.signed_expovariate(0, translation_scale)
         nnn = random.expovariate(1.0/3)
         self.Nsym = 1 + int(nnn)
         if self.Nsym == 1 and random.randint(0,1) == 0:

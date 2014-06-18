@@ -63,14 +63,14 @@ cdef Affine MakeAffine(random):
     # currently we always initialize pseudorandomly, but
     # eventually we'll want to generate this deterministically.
     a.theta = 2*M_PI*random.random()
-    a.compressme = random.gauss(0.8, 0.2)
+    a.compressme = random.signed_expovariate(0.8, 0.2)
     a.Mxx =  cos(a.theta)*a.compressme
     a.Mxy =  sin(a.theta)*a.compressme
     a.Myx = -sin(a.theta)*a.compressme
     a.Myy =  cos(a.theta)*a.compressme
     cdef double translation_scale = 0.8
-    a.Ox = random.gauss(0, translation_scale)
-    a.Oy = random.gauss(0, translation_scale)
+    a.Ox = random.signed_expovariate(0, translation_scale)
+    a.Oy = random.signed_expovariate(0, translation_scale)
     return a
 
 cdef Point affineTransform(Affine a, Point p) nogil:
@@ -91,9 +91,9 @@ cdef struct Fancy:
 cdef Fancy MakeFancy(random):
     cdef Fancy f
     f.a = MakeAffine(random)
-    f.spiralness = random.gauss(0, 3)
-    f.radius = random.gauss(.4, .2)
-    f.bounciness = random.gauss(2, 2)
+    f.spiralness = random.signed_expovariate(0, 3)
+    f.radius = random.signed_expovariate(.4, .2)
+    f.bounciness = random.signed_expovariate(2, 2)
     f.bumps = random.randint(1, 4)
     return f
 
@@ -115,8 +115,8 @@ cdef Symmetry MakeSymmetry(random):
     cdef Symmetry s
     cdef double theta = 2*M_PI*random.random()
     cdef double translation_scale = 0.1
-    s.a.Ox = random.gauss(0, translation_scale)
-    s.a.Oy = random.gauss(0, translation_scale)
+    s.a.Ox = random.signed_expovariate(0, translation_scale)
+    s.a.Oy = random.signed_expovariate(0, translation_scale)
     cdef double nnn = random.expovariate(1.0/3)
     s.Nsym = 1 + <int>nnn
     if s.Nsym == 1 and random.randint(0,1) == 0:
