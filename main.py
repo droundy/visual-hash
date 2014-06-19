@@ -56,7 +56,7 @@ class Matching(BoxLayout):
         rnd = VisualHash.BitTweakedRandom(self.img.text,frac, self.img.num,self.img.num)
         self.next_differs = True
         self.img.num += 1
-        if VisualHash.StrongRandom(self.img.text+'hi'+str(self.img.num)).random() < 0.25:
+        if SystemRandom().random() < 0.25:
             self.next_differs = False
             rnd = VisualHash.StrongRandom(self.img.text)
         NextImage(self.img, 512, rnd, hasher)
@@ -66,31 +66,41 @@ class Matching(BoxLayout):
         self.right_button.text = 'I remember this'
         self.img.x = self.width
         hasher = get_hasher()
-        self.img.text += '!'
-        rnd = VisualHash.StrongRandom(self.img.text)
-        NextImage(self.img, 512, rnd, hasher)
+        self.img.text = '%08d' % SystemRandom().randrange(0, 10**8)
+        self.rnd = VisualHash.StrongRandom(self.img.text)
+        NextImage(self.img, 512, self.rnd, hasher)
         self.begin_next_img()
         self.Reset()
     def Reset(self):
         self.entropy_label.text = 'Entropy:  %.1f' % self.bits.median()
+        anim = Animation(x=self.width, t='in_back', duration=animtime)
+        anim.start(self.img)
         if self.img.have_next:
+            print 'Reset working'
             self.differs = self.next_differs
             im = self.img.next[0]
             self.img.current_im = im.tostring()
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
             self.img.texture = texture
+            self.right_button.disabled = False
         else:
+            print 'Reset pending'
+            self.left_button.disabled = True
+            self.right_button.disabled = True
             Clock.schedule_once(lambda dt: self.Reset(), 0.25)
             return
-        self.left_button.disabled = True
-        self.right_button.text = 'I remember this'
-        anim = Animation(x=self.width, duration=animtime)
-        anim.start(self.img)
         anim = Animation(x=0, t='in_back', duration=animtime)
         anim.start(self.img)
+    def Begin(self):
+        anim = Animation(x=self.width, duration=animtime)
+        anim.start(self.img)
+        self.Start()
     def Start(self):
+        self.entropy_label.text = 'Entropy:  %.1f' % self.bits.median()
+        self.right_button.text = 'Same'
         if self.img.have_next:
+            print 'Start working'
             im = self.img.next[0]
             self.img.current_im = im.tostring()
             texture = Texture.create(size=im.size)
@@ -98,14 +108,15 @@ class Matching(BoxLayout):
             self.img.texture = texture
             self.begin_next_img()
         else:
+            print 'Start pending'
+            self.left_button.disabled = True
+            self.right_button.disabled = True
             Clock.schedule_once(lambda dt: self.Start(), 0.25)
             return
+        anim = Animation(x=0, duration=animtime)
+        anim.start(self.img)
         self.left_button.disabled = False
-        self.right_button.text = 'Same'
-        anim = Animation(x=0, t='in_back', duration=animtime)
-        anim.start(self.img)
-        anim = Animation(x=-self.width, duration=animtime)
-        anim.start(self.img)
+        self.right_button.disabled = False
     def ItMatches(self):
         print 'same:', self.differs, self.img.current_im != self.img.current_im
         if self.differs:
@@ -113,7 +124,9 @@ class Matching(BoxLayout):
             print 'new bits:', self.bits.median()
         else:
             print 'Nice!'
-        self.Reset()
+        anim = Animation(x=self.width, duration=animtime)
+        anim.start(self.img)
+        self.Start()
     def ItDiffers(self):
         print 'differs:', self.differs, self.img.current_im != self.img.current_im
         if self.differs:
@@ -121,7 +134,9 @@ class Matching(BoxLayout):
             print 'new bits:', self.bits.median()
         else:
             print 'Oops!'
-        self.Reset()
+        anim = Animation(x=-self.width, duration=animtime)
+        anim.start(self.img)
+        self.Start()
 
 def get_hasher():
     # pick the next image to test against, and start working on
