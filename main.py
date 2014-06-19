@@ -26,6 +26,8 @@ import settings as mysettings
 
 from statistics.PBA import Estimator
 
+from random import SystemRandom
+
 import VisualHash
 
 class Home(TabbedPanel):
@@ -161,7 +163,7 @@ class Memory(BoxLayout):
         self.original.x = 0
         self.img.x = self.width
         hasher = get_hasher()
-        self.original.text += '!'
+        self.original.text = '%08d' % SystemRandom().randrange(0, 10**8)
         rnd = VisualHash.StrongRandom(self.original.text)
         self.img.x = self.width
         NextImage(self.original, 512, rnd, hasher)
