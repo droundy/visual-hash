@@ -1,22 +1,57 @@
 #:kivy 1.8.0
 
-<Memory>:
+<TextHash>:
     orientation: 'vertical'
-    NiceImage:
+    text: 'foo'
+    thehash: thehash
+    Image:
         size_hint: 1, None
         height: sp(128)
         allow_stretch: True
         id: thehash
+        have_next: False
     Label:
         size_hint: 1, None
         height: sp(24)
         text: 'Memory stuff here'
     TextInput:
         text: 'Matching stuff here'
-        on_text: thehash.text = self.text
-
+        on_text: root.text = self.text; root.on_text()
 
 <Matching>:
+    left_button: left_button
+    right_button: right_button
+    img: img
+    entropy_label: entropy_label
+    orientation: 'vertical'
+    Label:
+        id: entropy_label
+        size_hint: 1, None
+        height: sp(24)
+        text: ''
+    Image:
+        size_hint: 1, 1
+        allow_stretch: True
+        text: 'matching1'
+        id: img
+        x: root.width
+        num: 0
+        have_next: False
+    BoxLayout:
+        size_hint: 1, None
+        height: sp(80)
+        orientation: 'horizontal'
+        Button:
+            id: left_button
+            text: 'Different'
+            disabled: True
+            on_press: root.ItDiffers()
+        Button:
+            id: right_button
+            text: 'I remember this'
+            on_press: root.ItMatches() if self.text == 'Same' else root.Start()
+
+<Memory>:
     left_button: left_button
     right_button: right_button
     img: img
@@ -72,3 +107,6 @@
     TabbedPanelItem:
         text: 'Memory'
         Memory:
+    TabbedPanelItem:
+        text: 'TextHash'
+        TextHash:

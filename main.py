@@ -39,29 +39,111 @@ class Home(TabbedPanel):
         print 'current changed!', args
 
 animtime = 1.0
+
 class Matching(BoxLayout):
     bits = Estimator(0, 128, 0.1)
     differs = False
     next_differs = False
-    def get_hasher(self):
-        # pick the next image to test against, and start working on
-        # the hashing.
-        kind = app.config.getdefault('game', 'hashtype', 'oops')
-        hasher = VisualHash.Flag
-        if kind == 'tflag':
-            hasher = VisualHash.TFlag
-        if kind == 'fractal':
-            hasher = VisualHash.OptimizedFractal
-        if kind == 'identicon':
-            hasher = VisualHash.Identicon
-        if kind == 'randomart':
-            hasher = VisualHash.RandomArt
-        return hasher
     def begin_next_img(self):
         # pick the next image to test against, and start working on
         # the hashing.
-        kind = app.config.getdefault('game', 'hashtype', 'oops')
-        hasher = self.get_hasher()
+        hasher = get_hasher()
+        nbits = self.bits.median()
+        frac = 1 - 0.5**(1.0/nbits)
+        print 'nbits', nbits, 'frac', frac
+        rnd = VisualHash.BitTweakedRandom(self.img.text,frac, self.img.num,self.img.num)
+        self.next_differs = True
+        self.img.num += 1
+        if VisualHash.StrongRandom(self.img.text+'hi'+str(self.img.num)).random() < 0.25:
+            self.next_differs = False
+            rnd = VisualHash.StrongRandom(self.img.text)
+        NextImage(self.img, 512, rnd, hasher)
+    def on_select(self, *args):
+        self.bits = Estimator(0, 128, 0.1)
+        self.left_button.disabled = True
+        self.right_button.text = 'I remember this'
+        self.img.x = self.width
+        hasher = get_hasher()
+        self.img.text += '!'
+        rnd = VisualHash.StrongRandom(self.img.text)
+        NextImage(self.img, 512, rnd, hasher)
+        self.begin_next_img()
+        self.Reset()
+    def Reset(self):
+        self.entropy_label.text = 'Entropy:  %.1f' % self.bits.median()
+        if self.img.have_next:
+            self.differs = self.next_differs
+            im = self.img.next[0]
+            self.img.current_im = im.tostring()
+            texture = Texture.create(size=im.size)
+            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            self.img.texture = texture
+        else:
+            Clock.schedule_once(lambda dt: self.Reset(), 0.25)
+            return
+        self.left_button.disabled = True
+        self.right_button.text = 'I remember this'
+        anim = Animation(x=self.width, duration=animtime)
+        anim.start(self.img)
+        anim = Animation(x=0, t='in_back', duration=animtime)
+        anim.start(self.img)
+    def Start(self):
+        if self.img.have_next:
+            im = self.img.next[0]
+            self.img.current_im = im.tostring()
+            texture = Texture.create(size=im.size)
+            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            self.img.texture = texture
+            self.begin_next_img()
+        else:
+            Clock.schedule_once(lambda dt: self.Start(), 0.25)
+            return
+        self.left_button.disabled = False
+        self.right_button.text = 'Same'
+        anim = Animation(x=0, t='in_back', duration=animtime)
+        anim.start(self.img)
+        anim = Animation(x=-self.width, duration=animtime)
+        anim.start(self.img)
+    def ItMatches(self):
+        print 'same:', self.differs, self.img.current_im != self.img.current_im
+        if self.differs:
+            self.bits.measured(self.bits.median(), False)
+            print 'new bits:', self.bits.median()
+        else:
+            print 'Nice!'
+        self.Reset()
+    def ItDiffers(self):
+        print 'differs:', self.differs, self.img.current_im != self.img.current_im
+        if self.differs:
+            self.bits.measured(self.bits.median(), True)
+            print 'new bits:', self.bits.median()
+        else:
+            print 'Oops!'
+        self.Reset()
+
+def get_hasher():
+    # pick the next image to test against, and start working on
+    # the hashing.
+    kind = app.config.getdefault('game', 'hashtype', 'oops')
+    hasher = VisualHash.Flag
+    if kind == 'tflag':
+        hasher = VisualHash.TFlag
+    if kind == 'fractal':
+        hasher = VisualHash.OptimizedFractal
+    if kind == 'identicon':
+        hasher = VisualHash.Identicon
+    if kind == 'randomart':
+        hasher = VisualHash.RandomArt
+    return hasher
+
+class Memory(BoxLayout):
+    bits = Estimator(0, 128, 0.1)
+    differs = False
+    next_differs = False
+    def begin_next_img(self):
+        # pick the next image to test against, and start working on
+        # the hashing.
+        hasher = get_hasher()
         nbits = self.bits.median()
         frac = 1 - 0.5**(1.0/nbits)
         print 'nbits', nbits, 'frac', frac
@@ -78,7 +160,7 @@ class Matching(BoxLayout):
         self.right_button.text = 'I remember this'
         self.original.x = 0
         self.img.x = self.width
-        hasher = self.get_hasher()
+        hasher = get_hasher()
         self.original.text += '!'
         rnd = VisualHash.StrongRandom(self.original.text)
         self.img.x = self.width
@@ -139,8 +221,23 @@ class Matching(BoxLayout):
             print 'Oops!'
         self.Reset()
 
-class Memory(BoxLayout):
-    pass
+class TextHash(BoxLayout):
+    def on_select(self, *args):
+        self.on_text() # for the very first time
+    def update_image(self):
+        if self.thehash.have_next:
+            im = self.thehash.next[0]
+            texture = Texture.create(size=im.size)
+            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            self.thehash.texture = texture
+        else:
+            Clock.schedule_once(lambda dt: self.update_image(), 0.5)
+            return
+    def on_text(self, *args):
+        rnd = VisualHash.StrongRandom(self.text)
+        hasher = get_hasher()
+        NextImage(self.thehash, 256, rnd, hasher)
+        Clock.schedule_once(lambda dt: self.update_image(), 0.5)
 
 class NextImage(Thread):
     def __init__(self, whosenext, size, rnd, hasher):
@@ -188,46 +285,6 @@ class ImageUpdater(Thread):
             print (self.text, self.frac, self.num, sz)
             self.q.put((sz, im.tostring()))
             sz *= 2
-
-class NiceImage(Image):
-    text = StringProperty('hi')
-    num = NumericProperty(0)
-    frac = NumericProperty(0)
-    # kind = ConfigParserProperty('', 'game', 'hashtype', 'example')
-    def __init__(self, **kw):
-        super(NiceImage, self).__init__(**kw)
-        self.q = Queue()
-        self.stop = Queue()
-        self.on_text()
-        Clock.schedule_interval(self.read_q, 0.25)
-    def read_q(self, dt):
-        try:
-            #print 'trying with', self.text, self.frac, self.num
-            sz, im = self.q.get(False)
-            texture = Texture.create(size=(sz, sz))
-            texture.blit_buffer(im, colorfmt='rgba', bufferfmt='ubyte')
-            self.texture = texture
-        except:
-            pass
-    def on_num(self, *args):
-        self.on_text()
-    def on_frac(self, *args):
-        self.on_text()
-    def on_text(self, *args):
-        self.stop.put('stop!')
-        self.stop = Queue()
-        self.q = Queue()
-        kind = app.config.getdefault('game', 'hashtype', 'oops')
-        hasher = VisualHash.Flag
-        if kind == 'tflag':
-            hasher = VisualHash.TFlag
-        if kind == 'fractal':
-            hasher = VisualHash.OptimizedFractal
-        if kind == 'identicon':
-            hasher = VisualHash.Identicon
-        if kind == 'randomart':
-            hasher = VisualHash.RandomArt
-        ImageUpdater(self.text, hasher, self.q, self.stop, 64, 512, self.frac, self.num)
 
 class MainApp(App):
     def build_config(self, config):
