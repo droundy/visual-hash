@@ -53,14 +53,17 @@ class Matching(BoxLayout):
         nbits = self.bits.median()
         frac = 1 - 0.5**(1.0/nbits)
         print 'nbits', nbits, 'frac', frac
-        rnd = VisualHash.BitTweakedRandom(self.img.text,frac, self.img.num,self.img.num)
         self.next_differs = True
         self.img.num += 1
         if SystemRandom().random() < 0.25:
             self.next_differs = False
-            rnd = VisualHash.StrongRandom(self.img.text)
-        NextImage(self.img, 512, rnd, hasher)
+            self.rnd.reset()
+        else:
+            self.rnd.reset()
+            self.rnd = VisualHash.BitTweakedRandom(self.rnd, frac, self.img.num,self.img.num)
+        NextImage(self.img, 512, self.rnd, hasher)
     def on_select(self, *args):
+        self.rnd = VisualHash.StrongRandom(self.img.text)
         self.bits = Estimator(0, 128, 0.1)
         self.left_button.disabled = True
         self.right_button.text = 'I remember this'

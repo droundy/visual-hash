@@ -22,6 +22,8 @@ class StrongRandom(object):
     def __init__(self, string):
         """ Create a random number generator given a string. """
         self.string = str(string)
+        self.reset()
+    def reset(self):
         self.hash = _hash.new(self.string).digest()
         self.bits = _hash.new(self.string).digest()
         self.bits_used = 0
@@ -95,7 +97,8 @@ class TweakedRandom(StrongRandom):
         self.fraction = fraction
         self.tweaker = StrongRandom(seed1)
         self.tweakness = StrongRandom(seed2)
-        self.gauss_next = None
+    def reset(self):
+        self._random.reset()
     def random32(self):
         """Generate a random 32-bit integer."""
         v = self._random.random32()
@@ -121,11 +124,22 @@ class BitTweakedRandom(StrongRandom):
         fraction - the fraction of bits that should be altered
         seed - a seed that determines which bits to modify
         """
-        self._random = StrongRandom(string)
+        try:
+            string.random32()
+            string.random()
+            string.reset()
+            self._random = string
+            print 'got good random with', fraction
+        except:
+            print 'got string random'
+            self._random = StrongRandom(string)
         self.fraction = fraction
         self.tweaker = StrongRandom(seed1)
         self.tweakness = StrongRandom(seed2)
-        self.gauss_next = None
+    def reset(self):
+        self._random.reset()
+        self.tweaker.reset()
+        self.tweakness.reset()
     def random32(self):
         """Generate a random 32-bit integer."""
         v = self._random.random32()
