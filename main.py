@@ -70,11 +70,11 @@ class Matching(BoxLayout):
         self.rnd = VisualHash.StrongRandom(self.img.text)
         NextImage(self.img, 512, self.rnd, hasher)
         self.begin_next_img()
-        self.Reset()
-    def Reset(self):
-        self.entropy_label.text = 'Entropy:  %.1f' % self.bits.median()
         anim = Animation(x=self.width, t='in_back', duration=animtime)
         anim.start(self.img)
+        Clock.schedule_once(lambda dt: self.Reset(), animtime)
+    def Reset(self):
+        self.entropy_label.text = 'Entropy:  %.1f' % self.bits.median()
         if self.img.have_next:
             print 'Reset working'
             self.differs = self.next_differs
@@ -95,7 +95,7 @@ class Matching(BoxLayout):
     def Begin(self):
         anim = Animation(x=self.width, duration=animtime)
         anim.start(self.img)
-        self.Start()
+        Clock.schedule_once(lambda dt: self.Start(), animtime)
     def Start(self):
         self.entropy_label.text = 'Entropy:  %.1f' % self.bits.median()
         self.right_button.text = 'Same'
@@ -126,7 +126,7 @@ class Matching(BoxLayout):
             print 'Nice!'
         anim = Animation(x=self.width, duration=animtime)
         anim.start(self.img)
-        self.Start()
+        Clock.schedule_once(lambda dt: self.Start(), animtime)
     def ItDiffers(self):
         print 'differs:', self.differs, self.img.current_im != self.img.current_im
         if self.differs:
@@ -136,7 +136,7 @@ class Matching(BoxLayout):
             print 'Oops!'
         anim = Animation(x=-self.width, duration=animtime)
         anim.start(self.img)
-        self.Start()
+        Clock.schedule_once(lambda dt: self.Start(), animtime)
 
 def get_hasher():
     # pick the next image to test against, and start working on
