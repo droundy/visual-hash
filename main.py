@@ -63,6 +63,7 @@ class Matching(BoxLayout):
             self.rnd = VisualHash.BitTweakedRandom(self.rnd, frac, self.img.num,self.img.num)
         NextImage(self.img, 512, self.rnd, hasher)
     def on_select(self, *args):
+        self.img.current_im = ''
         self.rnd = VisualHash.StrongRandom(self.img.text)
         self.bits = Estimator(0, 128, 0.1)
         self.left_button.disabled = True
@@ -82,6 +83,7 @@ class Matching(BoxLayout):
             print 'Reset working'
             self.differs = self.next_differs
             im = self.img.next[0]
+            self.img.old_im = self.img.current_im
             self.img.current_im = im.tostring()
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
@@ -103,8 +105,10 @@ class Matching(BoxLayout):
         self.entropy_label.text = 'Entropy:  %.1f' % self.bits.median()
         self.right_button.text = 'Same'
         if self.img.have_next:
+            self.differs = self.next_differs
             print 'Start working'
             im = self.img.next[0]
+            self.img.old_im = self.img.current_im
             self.img.current_im = im.tostring()
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
@@ -121,7 +125,7 @@ class Matching(BoxLayout):
         self.left_button.disabled = False
         self.right_button.disabled = False
     def ItMatches(self):
-        print 'same:', self.differs, self.img.current_im != self.img.current_im
+        print 'same:', self.differs, self.img.current_im != self.img.old_im
         if self.differs:
             self.bits.measured(self.bits.median(), False)
             print 'new bits:', self.bits.median()
@@ -131,7 +135,7 @@ class Matching(BoxLayout):
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def ItDiffers(self):
-        print 'differs:', self.differs, self.img.current_im != self.img.current_im
+        print 'differs:', self.differs, self.img.current_im != self.img.old_im
         if self.differs:
             self.bits.measured(self.bits.median(), True)
             print 'new bits:', self.bits.median()
