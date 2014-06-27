@@ -125,3 +125,73 @@ seems good to have a simple analytic understanding of how our answer
 will work out.  We can naturally check this approximation by
 evaluating equation :eq:`N approx` for :math:`N` to verify that it is
 large.
+
+Estimating the entropy take II
+------------------------------
+
+If we use a probabilistic bisection algorithm, we should be able to
+pretty easily measure the :math:`f` that leads to
+:math:`P(f_{\frac23})=\frac23` and :math:`P(f_{\frac13})=\frac13` (or
+any other pair of fractions).  Given these two numbers, we should be
+able to solve for :math:`p` and :math:`N` above.
+
+.. math::
+   P(f_{\frac13}) = \frac13 = \left(1 - f_{\frac13}(1 - p)\right)^N
+
+.. math::
+   P(f_{\frac23}) = \frac23 = \left(1 - f_{\frac23}(1 - p)\right)^N
+
+.. math::
+   -\ln 3 = N \ln\left(1 - f_{\frac13}(1 - p)\right)
+
+.. math::
+   \ln 2 -\ln 3 = N \ln\left(1 - f_{\frac23}(1 - p)\right)
+
+.. math::
+   \frac{\ln 3}{\ln 3 - \ln 2} = \frac{\ln\left(1 - f_{\frac13}(1 - p)\right)}{\ln\left(1 - f_{\frac23}(1 - p)\right)}
+
+.. math::
+   \frac{\ln 3}{\ln 3 - \ln 2} \ln\left(1 - f_{\frac23}(1 - p)\right)
+   =
+   \ln\left(1 - f_{\frac13}(1 - p)\right)
+
+.. math::
+   \exp\left(\frac{\ln 3}{\ln 3 - \ln 2}\right) \left(1 - f_{\frac23}(1 - p)\right)
+   =
+   1 - f_{\frac13}(1 - p)
+
+.. math::
+   \exp\left(\frac{\ln 3}{\ln 3 - \ln 2}\right) - 1
+   =
+   \left(f_{\frac23}\exp\left(\frac{\ln 3}{\ln 3 - \ln 2}\right) - f_{\frac13} \right)(1 - p)
+
+
+.. math::
+   \frac{
+     \exp\left(\frac{\ln 3}{\ln 3 - \ln 2}\right) - 1
+   }{
+     f_{\frac23}\exp\left(\frac{\ln 3}{\ln 3 - \ln 2}\right) - f_{\frac13}
+   }
+   =
+   1 - p
+
+.. math::
+   p = 1 -
+   \frac{
+     \exp\left(\frac{\ln 3}{\ln 3 - \ln 2}\right) - 1
+   }{
+     f_{\frac23}\exp\left(\frac{\ln 3}{\ln 3 - \ln 2}\right) - f_{\frac13}
+   }
+
+From this we should easily be able to solve for :math:`N` as well, and
+thus for the entropy.  If we were extra tricky, then rather than
+picking :math:`\frac13` and :math:`\frac23` which are somewhat
+arbitrary (if convenient and practical), we could analyze the
+statistics to choose two fractions that minimize our uncertainty in
+the entropy.  We ought to be able to estimate this uncertainty under
+the assumption that we have a known :math:`p` and :math:`N` and find
+something optimal.  The tradeoff is that we need to choose fractions
+that are measurable and easily distinguishable.  Probably these aren't
+too bad.
+
+
