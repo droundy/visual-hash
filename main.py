@@ -46,13 +46,20 @@ class Matching(BoxLayout):
     bits = Estimator(0, 128, 0.1)
     differs = False
     next_differs = False
+    def choose_bits_frac(self):
+        nbits = self.estimate_entropy()
+        frac = 1 - 0.5**(1.0/nbits)
+        print 'nbits', nbits, 'frac', frac
+        return frac
+    def estimate_entropy(self):
+         return self.bits.median()
+    def reset_entropy_estimate(self):
+        bits = Estimator(0, 128, 0.1)
     def begin_next_img(self):
         # pick the next image to test against, and start working on
         # the hashing.
         hasher = get_hasher()
-        nbits = self.bits.median()
-        frac = 1 - 0.5**(1.0/nbits)
-        print 'nbits', nbits, 'frac', frac
+        frac = self.choose_bits_frac()
         self.next_differs = True
         self.img.num += 1
         if SystemRandom().random() < 0.25:
@@ -78,7 +85,7 @@ class Matching(BoxLayout):
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Reset(), animtime)
     def Reset(self):
-        self.entropy_label.text = 'Entropy:  %.1f' % self.bits.median()
+        self.entropy_label.text = 'Entropy:  %.1f' % self.estimate_entropy()
         if self.img.have_next:
             print 'Reset working'
             self.differs = self.next_differs
@@ -102,7 +109,7 @@ class Matching(BoxLayout):
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def Start(self):
-        self.entropy_label.text = 'Entropy:  %.1f' % self.bits.median()
+        self.entropy_label.text = 'Entropy:  %.1f' % self.estimate_entropy()
         self.right_button.text = 'Same'
         if self.img.have_next:
             self.differs = self.next_differs
