@@ -6,32 +6,39 @@ class Estimator(object):
     def __init__(self, lo, hi, dx):
         Nx = int((hi-lo)/dx)
         self.xs = [lo + i*dx for i in range(Nx)]
-        self.f = [1]*Nx
+        self.f = {}
+        self.f[0.5] = [1]*Nx
         self.lo = lo
         self.hi = hi
+    def add_frac(self, frac):
+        self.f[frac] = [1]*len(self.xs)
     def median(self):
-        tot = sum(self.f)
+        return self.frac_median(0.5)
+    def frac_median(self, frac):
+        tot = sum(self.f[frac])
         sofar = 0
-        for i in range(len(self.f)):
-            sofar += self.f[i]
-            if sofar > tot/2:
+        for i in range(len(self.f[frac])):
+            sofar += self.f[frac][i]
+            if sofar > frac*tot:
                 return self.xs[i]
-        return self.xs[len(self.f)-1]
+        return self.xs[len(self.f[frac])-1]
     def measured(self, x, val):
         #print self.xs
         #print self.f
         #print self.median()
-        p = 2.0
-        if val:
-            for i in range(len(self.xs)):
-                if self.xs[i] > x:
-                    self.f[i] *= p
-                else:
-                    self.f[i] /= p
-        else:
-            for i in range(len(self.xs)):
-                if self.xs[i] < x:
-                    self.f[i] *= p
-                else:
-                    self.f[i] /= p
+        pc = 0.55
+        qc = 1 - pc
+        for frac in self.f.iterkeys():
+            if val:
+                for i in range(len(self.xs)):
+                    if self.xs[i] > x:
+                        self.f[frac][i] *= (2*pc)**(2*frac)
+                    else:
+                        self.f[frac][i] *= (2*qc)**(2*frac)
+            else:
+                for i in range(len(self.xs)):
+                    if self.xs[i] < x:
+                        self.f[frac][i] *= (2*pc)**(2*(1-frac))
+                    else:
+                        self.f[frac][i] *= (2*qc)**(2*(1-frac))
 
