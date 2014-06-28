@@ -42,37 +42,49 @@ class Home(TabbedPanel):
 
 animtime = 1.0
 
-class Matching(BoxLayout):
-    bits = Estimator(0, 128, 0.1)
-    differs = False
-    next_differs = False
-    def choose_bits_frac(self):
-        nbits = self.estimate_entropy()
-        frac = 1 - 0.5**(1.0/nbits)
-        print 'nbits', nbits, 'frac', frac
+class EntropyEstimator(object):
+    def __init__(self):
+        self.bits = Estimator(0, 128, 0.1)
+        self.choices = []
+    def choose_bits_frac(self, maxentropy=128):
+        if SystemRandom().random() < 0.25:
+            frac = 0
+            self.choices.append(0)
+        else:
+            nbits = self.estimate_entropy()
+            self.choices.append(nbits)
+            frac = 1 - 0.5**(1.0/nbits)
+            print 'nbits', nbits, 'frac', frac
         return frac
     def estimate_entropy(self):
          return self.bits.median()
     def reset_entropy_estimate(self):
-        bits = Estimator(0, 128, 0.1)
+        self.__init__()
+        self.choices = []
+    def measured(self, differs):
+        print 'found', differs, 'at', self.choices[0]
+        self.bits.measured(self.choices[0], differs)
+        self.choices = self.choices[1:]
+
+class Matching(BoxLayout):
+    e = EntropyEstimator()
+    differs = False
+    next_differs = False
+    next_frac = 0
     def begin_next_img(self):
         # pick the next image to test against, and start working on
         # the hashing.
         hasher = get_hasher()
-        frac = self.choose_bits_frac()
-        self.next_differs = True
+        frac = self.e.choose_bits_frac()
         self.img.num += 1
-        if SystemRandom().random() < 0.25:
-            self.next_differs = False
-            self.rnd.reset()
-        else:
-            self.rnd.reset()
-            self.rnd = VisualHash.BitTweakedRandom(self.rnd, frac, self.img.num,self.img.num)
+        self.rnd.reset()
+        if frac != 0:
+            self.rnd = VisualHash.BitTweakedRandom(self.rnd, frac, self.img.num, self.img.num)
         NextImage(self.img, 512, self.rnd, hasher)
     def on_select(self, *args):
         self.img.current_im = ''
         self.rnd = VisualHash.StrongRandom(self.img.text)
-        self.bits = Estimator(0, 128, 0.1)
+        self.e = EntropyEstimator()
         self.left_button.disabled = True
         self.right_button.text = 'I remember this'
         self.img.x = self.width
@@ -85,7 +97,7 @@ class Matching(BoxLayout):
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Reset(), animtime)
     def Reset(self):
-        self.entropy_label.text = 'Entropy:  %.1f' % self.estimate_entropy()
+        self.entropy_label.text = 'Entropy:  %.1f' % self.e.estimate_entropy()
         if self.img.have_next:
             print 'Reset working'
             self.differs = self.next_differs
@@ -109,7 +121,7 @@ class Matching(BoxLayout):
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def Start(self):
-        self.entropy_label.text = 'Entropy:  %.1f' % self.estimate_entropy()
+        self.entropy_label.text = 'Entropy:  %.1f' % self.e.estimate_entropy()
         self.right_button.text = 'Same'
         if self.img.have_next:
             self.differs = self.next_differs
@@ -132,22 +144,14 @@ class Matching(BoxLayout):
         self.left_button.disabled = False
         self.right_button.disabled = False
     def ItMatches(self):
-        print 'same:', self.differs, self.img.current_im != self.img.old_im
-        if self.differs:
-            self.bits.measured(self.bits.median(), False)
-            print 'new bits:', self.bits.median()
-        else:
-            print 'Nice!'
+        print 'same:', self.img.current_im != self.img.old_im
+        self.e.measured(False)
         anim = Animation(x=self.width, duration=animtime)
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def ItDiffers(self):
-        print 'differs:', self.differs, self.img.current_im != self.img.old_im
-        if self.differs:
-            self.bits.measured(self.bits.median(), True)
-            print 'new bits:', self.bits.median()
-        else:
-            print 'Oops!'
+        print 'differs:', self.img.current_im != self.img.old_im
+        self.e.measured(True)
         anim = Animation(x=-self.width, duration=animtime)
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
@@ -176,6 +180,7 @@ class Memory(BoxLayout):
         # the hashing.
         hasher = get_hasher()
         nbits = self.bits.median()
+        print 'nbits', nbits
         frac = 1 - 0.5**(1.0/nbits)
         print 'nbits', nbits, 'frac', frac
         rnd = VisualHash.BitTweakedRandom(self.original.text,frac, self.img.num,self.img.num)
