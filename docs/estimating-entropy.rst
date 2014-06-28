@@ -129,31 +129,55 @@ large.
 Estimating the entropy take II
 ------------------------------
 
-If we use a probabilistic bisection algorithm, we should be able to
-pretty easily measure the :math:`f` that leads to
-:math:`P(f_{\frac23})=\frac23` and :math:`P(f_{\frac13})=\frac13` (or
-any other pair of fractions).  Given these two numbers, we should be
-able to solve for :math:`p` and :math:`N` above.
+Let us consider a system consisting of :math:`N` parts, each of which
+has :math:`n` distinct configurations.  If I randomly modify one part,
+then the chance of changing the system is :math:`q = 1 -
+\frac{1}{n}`.  The entropy of such a system is given by
 
 .. math::
-   P(f_{\frac13}) = \frac13 = \left(1 - f_{\frac13}(1 - p)\right)^N
+   H = N \log_2 n
+
+If I change a fraction :math:`f` of the parts of the system, the
+probability of *not* changing the system is given by
 
 .. math::
-   P(f_{\frac23}) = \frac23 = \left(1 - f_{\frac23}(1 - p)\right)^N
+   P = (1 - fq)^N
+
+Let us now consider a fraction :math:`f_a` that has a probability
+:math:`a` of *not* changing the system.
 
 .. math::
-   -\ln 3 = N \ln\left(1 - f_{\frac13}(1 - p)\right)
+   a = (1 - f_a q)^N
+
+We will assume that we can measure :math:`f_a`, and also that we can
+(and do) measure :math:`f_{a^2}`, the fraction that leads to the
+square of probability :math:`a`.
 
 .. math::
-   \ln 2 -\ln 3 = N \ln\left(1 - f_{\frac23}(1 - p)\right)
+   a^2 = (1 - f_{a^2} q)^N
+
+We can solve for the following:
 
 .. math::
-   \frac{\ln 3}{\ln 3 - \ln 2} = \frac{\ln\left(1 - f_{\frac13}(1 - p)\right)}{\ln\left(1 - f_{\frac23}(1 - p)\right)}
+   q = \frac{2f_a - f_{a^2}}{f_a^2}
 
 .. math::
-   \frac{\ln 3}{\ln 3 - \ln 2} \ln\left(1 - f_{\frac23}(1 - p)\right)
-   =
-   \ln\left(1 - f_{\frac13}(1 - p)\right)
+   N = \frac{\ln a}{\ln\left(\frac{f_{a^2}}{f_a} - 1\right)}
 
+Taking these together, we can show that the entropy is given by
 
+.. math::
+   H = -\frac{\ln a}{\ln\left(\frac{f_{a^2}}{f_a} - 1\right)}
+       \log_2 \left(1 - \frac{2f_a - f_{a^2}}{f_a^2}\right)
 
+A nice option seems to be
+
+.. math::
+   a = \frac{\sqrt{5} - 1}{2}
+
+.. math::
+   a^2 = \frac{3 - \sqrt{5}}{2}
+
+which balances the two at an average of 50%, thus avoiding a bias in
+one direction or the other.  This is closely related to the golden
+ratio.

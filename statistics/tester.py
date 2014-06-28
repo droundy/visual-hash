@@ -29,6 +29,8 @@ default_Ntries = 30
 fracs = [1./3, 0.5, 2./3]
 fracs = [0.25, 0.5, 0.75]
 fracs = [1./3, 2./3]
+golden = (math.sqrt(5)-1)/2
+fracs = [golden**2, golden]
 #fracs = [1./3]
 #fracs = [0.5]
 
@@ -42,7 +44,8 @@ for attempt in range(15):
         for frac in fracs:
             out[frac][i] = e.frac_median(frac)
             e.measured(out[frac][i], rnd(out[frac][i]))
-    syms = { 0.5: '.', 1./3: '+', 2./3: 'x', .25: '>', .75: '<' }
+    syms = { 0.5: '.', 1./3: '+', 2./3: 'x', .25: '>', .75: '<',
+             golden: 'o', golden**2: 's' }
     for frac in fracs:
         plt.plot(out[frac], syms[frac])
     mystr = ''
