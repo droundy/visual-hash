@@ -19,19 +19,20 @@ def mytanh_random(mean, width):
         return random.random() > f(x)
     return prob
 
-x0 = 30
-width = 10
+x0 = 60
+width = 1
 f = mytanh(x0, width)
 rnd = mytanh_random(x0, width)
 
-default_Ntries = 150
+default_Ntries = 30
 
 fracs = [1./3, 0.5, 2./3]
 fracs = [0.25, 0.5, 0.75]
+fracs = [1./3, 2./3]
 #fracs = [1./3]
 #fracs = [0.5]
 
-for attempt in range(5):
+for attempt in range(15):
     out = {}
     e = PBA.Estimator(0, 100, 0.01)
     for frac in fracs:
@@ -46,7 +47,7 @@ for attempt in range(5):
         plt.plot(out[frac], syms[frac])
     mystr = ''
     for frac in fracs:
-        mystr += '%10g (%5.2g) ' % (out[frac][-1], f(out[frac][-1]))
+        mystr += '%8g (%4.2f) ' % (out[frac][-1], f(out[frac][-1]))
     print mystr
 
 for frac in fracs:

@@ -26,7 +26,7 @@ class Estimator(object):
         #print self.xs
         #print self.f
         #print self.median()
-        pc = 0.55
+        pc = 0.7
         qc = 1 - pc
         for frac in self.f.iterkeys():
             if val:
