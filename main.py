@@ -24,6 +24,8 @@ from kivy import platform
 from kivy.properties import StringProperty, NumericProperty #, ConfigParserProperty
 import settings as mysettings
 
+import math
+
 from statistics.PBA import Estimator
 
 from random import SystemRandom
@@ -42,7 +44,7 @@ class Home(TabbedPanel):
 
 animtime = 1.0
 
-class EntropyEstimator(object):
+class BinaryEntropyEstimator(object):
     def __init__(self):
         self.bits = Estimator(0, 128, 0.1)
         self.choices = []
@@ -60,10 +62,53 @@ class EntropyEstimator(object):
          return self.bits.median()
     def reset_entropy_estimate(self):
         self.__init__()
-        self.choices = []
     def measured(self, differs):
         print 'found', differs, 'at', self.choices[0]
         self.bits.measured(self.choices[0], differs)
+        self.choices = self.choices[1:]
+
+class EntropyEstimator(object):
+    def __init__(self):
+        self.logfrac = Estimator(-16, 0, 0.1)
+        self.golden = (math.sqrt(5)-1)/2
+        self.logfrac.add_frac(self.golden)
+        self.logfrac.add_frac(self.golden**2)
+        self.choices = []
+    def choose_bits_frac(self):
+        if SystemRandom().random() < 0.25:
+            frac = 0
+            self.choices.append(16)
+        else:
+            if SystemRandom().random() < 0.5:
+                logfrac = self.logfrac.frac_median(self.golden)
+            else:
+                logfrac = self.logfrac.frac_median(self.golden**2)
+            self.choices.append(logfrac)
+            frac = 2**logfrac
+        print 'frac', frac
+        return frac
+    def estimate_entropy(self):
+        g = self.golden
+        # the following two are swapped because of the difference
+        # between "probability of changing" and "probability of *not*
+        # changing."
+        fg2 = 1 - 2**(self.logfrac.frac_median(self.golden))
+        fg = 1 - 2**(self.logfrac.frac_median(self.golden**2))
+        print 'fg', fg, 'fg2', fg2
+        q = fg2/fg**2
+        if q > 1 or q < 0:
+            print '=====>>>>>>>>>> crazy q!', q, '<<<<<<<<<<<================'
+        print 'q', q, 'fg*q', fg*q, 'fg2*q', fg2*q
+        N = math.log(g)/math.log(fg2/fg)
+        H = N*math.log(1/q, 2)
+        print 'H', H, 'q', q, 'N', N, 'fg', fg, 'fg2', fg2
+        return H
+    def reset_entropy_estimate(self):
+        self.__init__()
+    def measured(self, differs):
+        print 'found', differs, 'at', self.choices[0]
+        print 'median', self.logfrac.median()
+        self.logfrac.measured(self.choices[0], not differs)
         self.choices = self.choices[1:]
 
 class Matching(BoxLayout):
