@@ -29,7 +29,8 @@ json = """
       "desc": "Type of hash ",
       "section": "game",
       "key": "hashtype",
-      "options": ["flag", "tflag", "fractal", "identicon", "randomart"] }
+      "options": ["hex32", "hex64", "hex128",
+                  "flag", "tflag", "fractal", "identicon", "randomart"] }
 
 ]
 """

@@ -14,7 +14,6 @@ from kivy.clock import Clock
 from kivy.metrics import sp
 from kivy.app import App
 from kivy.graphics.texture import Texture
-from kivy.uix.image import Image
 from kivy.animation import Animation
 from kivy.uix.settings import Settings
 from kivy.uix.boxlayout import BoxLayout
@@ -151,6 +150,7 @@ class Matching(BoxLayout):
             self.img.current_im = im.tostring()
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            texture.flip_vertical()
             self.img.texture = texture
             self.right_button.disabled = False
         else:
@@ -176,6 +176,7 @@ class Matching(BoxLayout):
             self.img.current_im = im.tostring()
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            texture.flip_vertical()
             self.img.texture = texture
             self.begin_next_img()
         else:
@@ -214,6 +215,12 @@ def get_hasher():
         hasher = VisualHash.Identicon
     if kind == 'randomart':
         hasher = VisualHash.RandomArt
+    if kind == 'hex32':
+        hasher = VisualHash.MakeHex(32//4)
+    if kind == 'hex64':
+        hasher = VisualHash.MakeHex(64//4)
+    if kind == 'hex128':
+        hasher = VisualHash.MakeHex(128//4)
     return hasher
 
 class Memory(BoxLayout):
@@ -258,6 +265,7 @@ class Memory(BoxLayout):
             self.original.current_im = im.tostring()
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            texture.flip_vertical()
             self.original.texture = texture
         else:
             Clock.schedule_once(lambda dt: self.Reset(), 0.25)
@@ -274,6 +282,7 @@ class Memory(BoxLayout):
             self.img.current_im = im.tostring()
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            texture.flip_vertical()
             self.img.texture = texture
             self.begin_next_img()
         else:
@@ -310,6 +319,7 @@ class TextHash(BoxLayout):
             im = self.thehash.next[0]
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            texture.flip_vertical()
             self.thehash.texture = texture
         else:
             Clock.schedule_once(lambda dt: self.update_image(), 0.5)
@@ -334,6 +344,7 @@ class NextImage(Thread):
         im = self.hasher(self.rnd, sz)
         texture = Texture.create(size=im.size)
         texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+        texture.flip_vertical()
         self.next.next = [im]
         self.next.have_next = True
 

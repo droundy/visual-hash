@@ -29,7 +29,7 @@ The visual hash styles supported are:
 - Identicon
 """
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 try:
     import pyximport; pyximport.install()
@@ -146,3 +146,33 @@ def RandomArt(random = StrongRandom(""), size = 128):
     """
     img = randomart.Create(random, size)
     return img
+
+def _StringToImage(text, size = 128):
+    """
+    Create an image from a string.
+    """
+    bigsize = 4*size
+    im = Image.new( 'RGBA', (bigsize,bigsize), "black") # create a new black image
+    draw = ImageDraw.Draw(im)
+    font = ImageFont.truetype('LiberationMono-Regular.ttf', 48)
+    (w,h) = draw.textsize(text, font=font)
+    ratio = bigsize/float(w + h)
+    fontsize = int(round(48*ratio))
+    h = int(round(ratio*h))
+    font = ImageFont.truetype('LiberationMono-Regular.ttf', fontsize)
+    draw.text((h//2,bigsize//2-h//2), text, fill=(255,255,255), font=font)
+    im = im.resize((size,size), Image.ANTIALIAS)
+    return im
+
+def Hex(random = StrongRandom(""), size = 128, hexits = 12):
+    string = ''
+    def myhex(n):
+        if n < 10:
+            return chr(ord('0')+n)
+        return chr(ord('a') + (n-10))
+    for i in range(hexits):
+        string += myhex(random.randint(0, 15))
+    return _StringToImage(string, size)
+
+def MakeHex(hexits):
+    return lambda random, size: Hex(random, size, hexits)
