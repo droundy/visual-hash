@@ -342,9 +342,11 @@ class NextImage(Thread):
     def run(self):
         sz = self.size
         im = self.hasher(self.rnd, sz)
-        texture = Texture.create(size=im.size)
-        texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
-        texture.flip_vertical()
+        # I don't know why, but the following three lines cause this to crash on MacOS!
+        #texture = Texture.create(size=im.size)
+        #print 'texture is', texture
+        #texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+        #texture.flip_vertical()
         self.next.next = [im]
         self.next.have_next = True
 
