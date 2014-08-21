@@ -3,98 +3,32 @@ import numpy as np
 import random
 #import matplotlib.pyplot as plt
 
-N = 0 #constant
-q = 0 #constant
-A = 0 #constant
+import random_data
+
 P = 0 #probability of two hashes being the same
 b=100  #number of times two hashes are compared
 #f = np.zeros(b+1) # f is the fraction of the original
  #hash to the new hash in terms of variables changed
 
-
-a = 0 #a counter variable used only for python purposes
-#while a <= b: #while loop to assign an f value to each hash comparison
- #   f[a] = random.random()
- #   a += 1
-
-f =[0.020960347639031207, 0.030548882884134487,
-    0.035957057155238004,
-    0.04055288051602135, 0.040699147161136651,
-    0.047842455489067182, 0.067860415304312971,
-    0.073500672487622487, 0.10474707110596382,
-    0.10945797206272301,
-    0.11123555766145421, 0.12499288681795107,
-    0.13263896324398516,
-    0.14166478472818445, 0.14230460455216798,
-    0.15853167698769621, 0.16710202065481417,
-    0.1845204277151915,
-    0.21854919450255295, 0.23028385280686703,
-    0.25902948391224523,
-    0.26882992222772162,
-    0.28035848377560357, 0.28349834752095249,
-    0.32334613143306912, 0.32655565635497619,
-    0.32850703973753703,
-    0.34031374659261659, 0.34557427108700467,
-    0.34991687276174266, 0.35770066627303543,
-    0.35917228705899762, 0.36419918692176756,
-    0.37373164228449018,
-    0.38389376976105971, 0.3905406460621702,
-    0.39340578247713809, 0.39585813846090134,
-    0.40122528774871435,
-    0.40147292691583802, 0.40966982332688195,
-    0.4184006556052019, 0.42356432395855059,
-    0.42390437634118472, 0.42649191865098979,
-    0.4350516906879085, 0.44430171671625618,
-    0.44783781780268161, 0.45464120325648061,
-    0.45994173635242741, 0.47491613812231248,
-    0.48653214322361471, 0.49719571101833204,
-    0.5024307149622832, 0.50497314977468966,
-    0.50567314746674774, 0.52958945031253213,
-    0.5336424967149489, 0.54258147338140028,
-    0.56418083999068003, 0.58052389377185409,
-    0.60358740119836141,
-    0.60542688500522002, 0.60921935460312693,
-    0.61406569330695571, 0.63260985119641477,
-    0.63776829815494429, 0.64743705027006948,
-    0.65075072754751628, 0.65793412895956349,
-    0.66078861801375666,
-    0.6662351156513191, 0.66763726758927533,
-    0.6740063377710831, 0.67672651934854477,
-    0.68451875140738738,
-    0.69476843654110221, 0.69676933982418887,
-    0.72446205826551502, 0.72742461026712213,
-    0.73989536107991438,
-    0.77480566017068375, 0.79082944951904133,
-    0.79132525480164562, 0.79532670743357559,
-    0.80052445867264899,
-    0.8214012751222356, 0.84729289686303599,
-    0.86053758886513609, 0.8640959282287719,
-    0.87338674449755638, 0.88320693994889099,
-    0.89600024725820948,
-    0.91229961780238777, 0.92019113191437873,
-    0.93923537365029774, 0.96964843230622588,
-    0.97913300787688629, 0.97925083501532395,
-    0.99097556067073622, 0.99982155273073703]
-#sorted(f)
-print(f)
-def Prob(x): #the Probability function to determine
-    #the probability that the hashes are the same
-    P = (1-(x*q)**N)*(1-A)
-    return P
-    print(P)
-
 N = 1#the constants are given float values here 
 q = 1
 A = 0
 
-a = 0 #counter varibale
-p = np.zeros(b+1)#array to convey Probability information
+# TO DO!  :)
 
+to_do = [""" Write a function to simulate measurements, which is to say, given a set of
+             f values and q, A and N, return a set of 0s and 1s indicating whether it
+             remained the same.  Using random number generator.""",
+         """ Write a function that given a bunch of measurement results and a q, A, N,
+             will return the "probability" of finding this set of measurements. """,
+         """ (later) Think about eliminating q or N in favor of entropy. """,
+         """ (later) Visualize the probability above, how it depends on q, A, and N,
+             to show what combinations are likely. """,
+         """ (later) Choose next f based on previous observations. """]
 
-
-while a <= b:
-    p[a] = np.float(Prob(f[a]))
-    a += 1
+p = np.zeros_like(random_data.f) # the probability of staying the same for each f value
+for i in range(len(random_data.f)):
+    p[i] = random_data.Prob(random_data.f[i])
 
 print(p)
 
