@@ -39,10 +39,10 @@ If I change a fraction :math:`f` of the parts of the system, the
 probability of changing the system is given by
 
 .. math::
-   P = 1 - (fq)^N
+   P = 1 - (fq)^N(1-A)
 
 where :math:`q` is the probability of a given thing *not* changing the
-system when it is modified.
+system when it is modified, and math: ‘A’ is the variable accounting for user error.
 Let us now consider a fraction :math:`f_\gamma` that has a probability
 :math:`\gamma` of *not* changing the system.
 
