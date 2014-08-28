@@ -36,7 +36,9 @@ for i in range(len(random_data.data_array)):
 		
 print(new_prob)
 total_prob = 1
+log_total_prob = 0
 for i in range(len(new_prob)):
 	total_prob = total_prob*new_prob[i]
-	
+	log_total_prob += np.log2(new_prob[i])
 print(total_prob)		
+print 'log total prob', log_total_prob

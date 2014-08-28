@@ -4,7 +4,7 @@ import random
 
 
 
-hash_comparisons = int(5)
+hash_comparisons = int(500)
 
 fraction_array = np.zeros(hash_comparisons)
 

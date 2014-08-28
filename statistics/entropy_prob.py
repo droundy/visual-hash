@@ -37,6 +37,6 @@ for i in range(len(random_data.data_array)):
 print(new_prob)
 total_entropy = 1
 for i in range(len(new_prob)):
-	total_entropy = total_entropy*new_prob[i]*math.log(new_prob[i], 2)
+	total_entropy = total_entropy + new_prob[i]*math.log(new_prob[i], 2)
 total_entropy = -1*total_entropy	
 print(total_entropy)		
