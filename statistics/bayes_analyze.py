@@ -20,7 +20,7 @@ def playGame(P, fs):
     experiments at f values fs. """
     results = numpy.zeros_like(fs)
     for i in range(len(fs)):
-        if random.uniform() < P(fs[i]):
+        if random.uniform() < P(fs[i]):#where is the P(f) function in the code?
             results[i] = 1
     return results
 
@@ -31,31 +31,108 @@ def findBayesProbability(P, fs, results):
     prob = 1
     for i in range(len(fs)):
         if results[i] == 1:
-            prob *= P(fs[i])
+            prob *= P(fs[i]) # *= is the same as prob*P(fs[i])
         else:
             prob *= 1 - P(fs[i])
     return prob
 
 def pickNextF(fs, results):
-    """ Choose the next f value to try an experiment on. """
-    return random.uniform()
+	import random
+	import math
+	""" Choose the next f value to try an experiment on. """
+	sort_fs = sorted(fs) #sort the fs list into ascending order of values
+
+	largest_gap = 0 #reset gap and track values to zero
+	track = 0
+	mu = 0
+	window = 0
+	i = 0
+	gap = numpy.zeros(len(fs)+1) #create an array to hold gap values
+	""" Choosing the next fs value by finding the largest current gap 
+	in the fs values and using that gap location to center
+	a gaussian distribution curve on it. This curve peaks at the center of the 
+	gap and through probability of random numbers being under the dist. curve, 
+	a higher percentage of next fs will fall in the area where there are currently fewer fs
+	located. This gaussian dist. curve does not have to belocated where the largest gap is,
+	as it can be centered on any area of the P(f) curve where more information is wanted."""
+
+	for i in range(len(gap)): #there will be 1 more gap than fs
+	
+		if i == 0:
+			print"first"
+			gap[i] = sort_fs[i] 
+			'''
+			if sort_fs[i] <= .5001 :
+				largest_gap = 1-gap[i]			
+			else:
+				largest_gap = gap[i]
+			'''
+		elif i == len(sort_fs):
+			print "last"
+			gap[i] = 1-sort_fs[i-1]
+			
+			if gap[i] >= gap[i-1]:
+				largest_gap = gap[i]
+				track = i #tracks the i'th value of where the largest gap occurs in sort_fs
+			else: 
+				largest_gap = largest_gap
+			
+		else:
+			print i, "i"
+			print len(gap), "gap"
+			print len(sort_fs), "sort"
+			gap[i] = sort_fs[i] - sort_fs[i-1]
+			
+			if gap[i] >= gap[i-1]:
+				largest_gap = gap[i]
+				track = i
+			else:
+				largest_gap = largest_gap
+	#print largest_gap,"lg"
+	print track, "track"
+	#print sort_fs[track], sort_fs[track-1]
+
+		
+	window = sort_fs[track] - sort_fs[track-1] #defines the gap window
+	mu = sort_fs[track-1] + window/2 #sets variable mu to be centered on the gap
+	print mu, "mu"
+	sigma = .55
+	scale = .3
+
+	while True:
+		r1 = random.random()
+
+		def new_f(r1):
+			return scale*(1/(sigma*((2*math.pi)**.5)))*(math.exp((-(r1-mu)**2)/(2*sigma**2)))
+			
+		r2 = random.random()
+
+		if r2 <= new_f(r1):
+			new_fs = r1
+			break
+		else:
+			"do nothing"
+	print new_fs, "new fs"
+	#print sort_fs
+	return new_fs
+	#fs = numpy.append(fs, new_fs)
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    P = model(30, 14, 0.05)
+    P = model(30, 14, 0.05) # H, N, A
 
     # fs = numpy.arange(0, 1, 0.0005)
     # results = playGame(P, fs)
     # print numpy.column_stack((fs, P(fs), results))
 
-    fs = numpy.array([0, 0.5, 1])
-    results = playGame(P, fs)
-    for i in range(100):
+    fs = numpy.array([0, 0.5, 1]) #starting f?
+    results = playGame(P, fs) #seed results
+    for i in range(100): #loop to generate further hash comparisons
         nextf = pickNextF(fs, results)
         res = playGame(P, [nextf])
-        fs = numpy.append(fs, nextf)
-        results = numpy.append(results, res[0])
+        fs = numpy.append(fs, nextf) #adds newest f to fs array
+        results = numpy.append(results, res[0]) #updates results with newest result
 
     plt.figure()
     nbins = len(fs)/20.
