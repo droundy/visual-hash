@@ -68,59 +68,36 @@ def pickNextF(fs, results):
 				largest_gap = gap[i]
 			'''
 		elif i == len(sort_fs):
-			print "last"
 			gap[i] = 1-sort_fs[i-1]
 			
-			if gap[i] >= gap[i-1]:
+			if gap[i] >= largest_gap:
 				largest_gap = gap[i]
 				track = i #tracks the i'th value of where the largest gap occurs in sort_fs
-			else: 
-				largest_gap = largest_gap
-			
 		else:
-			print i, "i"
-			print len(gap), "gap"
-			print len(sort_fs), "sort"
 			gap[i] = sort_fs[i] - sort_fs[i-1]
 			
-			if gap[i] >= gap[i-1]:
+			if gap[i] >= largest_gap:
 				largest_gap = gap[i]
 				track = i
-			else:
-				largest_gap = largest_gap
 	#print largest_gap,"lg"
-	print track, "track"
 	#print sort_fs[track], sort_fs[track-1]
 
 		
 	window = sort_fs[track] - sort_fs[track-1] #defines the gap window
 	mu = sort_fs[track-1] + window/2 #sets variable mu to be centered on the gap
 	print mu, "mu"
-	sigma = .55
+	sigma = window/2.0
 	scale = .3
 
-	while True:
-		r1 = random.random()
-
-		def new_f(r1):
-			return scale*(1/(sigma*((2*math.pi)**.5)))*(math.exp((-(r1-mu)**2)/(2*sigma**2)))
-			
-		r2 = random.random()
-
-		if r2 <= new_f(r1):
-			new_fs = r1
-			break
-		else:
-			"do nothing"
-	print new_fs, "new fs"
-	#print sort_fs
-	return new_fs
-	#fs = numpy.append(fs, new_fs)
+        rand_f = -1
+        while rand_f > 1 or rand_f < 0:
+            rand_f = random.gauss(mu, sigma)
+        return rand_f
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    P = model(30, 14, 0.05) # H, N, A
+    P = model(70, 14, 0.05) # H, N, A
 
     # fs = numpy.arange(0, 1, 0.0005)
     # results = playGame(P, fs)
@@ -128,20 +105,15 @@ if __name__ == '__main__':
 
     fs = numpy.array([0, 0.5, 1]) #starting f?
     results = playGame(P, fs) #seed results
-    for i in range(100): #loop to generate further hash comparisons
+    for i in range(1000): #loop to generate further hash comparisons
         nextf = pickNextF(fs, results)
+        print 'our next f is', nextf, 'and fs is', fs[-3:], 'length fs is', len(fs)
         res = playGame(P, [nextf])
         fs = numpy.append(fs, nextf) #adds newest f to fs array
         results = numpy.append(results, res[0]) #updates results with newest result
 
     plt.figure()
-    nbins = len(fs)/20.
-    if nbins < 10:
-        nbins = 10
-    if nbins > 50:
-        nbins = 50
-    nbins = int(nbins)
-    plt.hist((fs[results>0.5], fs[results<0.5]), len(fs)/50.)
+    plt.hist((fs, fs[results>0.5], fs[results<0.5]))
     plt.xlabel('$f$')
 
     #plt.show()
