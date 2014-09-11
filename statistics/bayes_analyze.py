@@ -34,7 +34,7 @@ def findBayesProbability(P, fs, results):
             prob *= P(fs[i]) # *= is the same as prob*P(fs[i])
         else:
             prob *= 1 - P(fs[i])
-    return prob
+    return prob # it's actually log probability
 
 def pickNextF(fs, results):
 	import random
@@ -97,7 +97,7 @@ def pickNextF(fs, results):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    P = model(70, 14, 0.05) # H, N, A
+    P = model(26, 4, 0.05) # H, N, A
 
     useDeterministic = True
     if useDeterministic:
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     else:
         fs = numpy.array([0, 0.5, 1]) #starting f?
         results = playGame(P, fs) #seed results
-        for i in range(1000): #loop to generate further hash comparisons
+        for i in range(100): #loop to generate further hash comparisons
             nextf = pickNextF(fs, results)
             print 'our next f is', nextf, 'and fs is', fs[-3:], 'length fs is', len(fs)
             res = playGame(P, [nextf])
@@ -128,7 +128,8 @@ if __name__ == '__main__':
     dA = 0.1
     for A in numpy.arange(dA/2.0, 1, dA): # sum over all possible A values
         PP = model(Hs, Ns, A)
-        thisprob = findBayesProbability(PP, fs, results)*dA
+        Pprior = 1.0/(1 + Hs/100)
+        thisprob = Pprior*findBayesProbability(PP, fs, results)*dA
         print 'prob of A =', A, 'is', sum(sum(thisprob))
         prob += thisprob
     prob /= sum(sum(prob)) # normalize the probability
