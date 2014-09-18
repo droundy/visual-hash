@@ -94,12 +94,37 @@ def pickNextF(fs, results):
             rand_f = random.gauss(mu, sigma)
         return rand_f
 
+def findBestHNA(fs, results):
+    Ns_1d = numpy.arange(1, 30, 0.5)
+    Hs_1d = numpy.arange(1, 100, 0.5)
+    Ns, Hs = numpy.meshgrid(Ns_1d, Hs_1d)
+    prob = numpy.zeros_like(Ns)
+    dA = 0.01
+    maxprobability = 0
+    bestN = 0
+    bestH = 0
+    bestA = 0
+    for A in numpy.arange(dA/2.0, 1, dA): # sum over all possible A values
+        PP = model(Hs, Ns, A)
+        Pprior = 1.0/(1 + Hs/100)
+        thisprob = Pprior*findBayesProbability(PP, fs, results)*dA
+        maxprob_this_A = thisprob.max()
+        if maxprob_this_A > maxprobability:
+            i,j = numpy.unravel_index(thisprob.argmax(), thisprob.shape)
+            bestN = Ns[i,j]
+            bestH = Hs[i,j]
+            bestA = A
+            maxprobability = maxprob_this_A
+        #print 'maxprob_this_A for', A, 'is', maxprob_this_A
+    #print 'I think that', bestH, bestN, bestA, 'with prob', maxprobability
+    return bestH, bestN, bestA
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    P = model(26, 4, 0.05) # H, N, A
+    P = model(26, 4, 0.1) # H, N, A
 
-    useDeterministic = True
+    useDeterministic = False
     if useDeterministic:
         random.seed(0)
         fs = numpy.arange(0, 1, 0.001)
@@ -108,12 +133,14 @@ if __name__ == '__main__':
     else:
         fs = numpy.array([0, 0.5, 1]) #starting f?
         results = playGame(P, fs) #seed results
-        for i in range(100): #loop to generate further hash comparisons
+        for i in range(1000): #loop to generate further hash comparisons
             nextf = pickNextF(fs, results)
             print 'our next f is', nextf, 'and fs is', fs[-3:], 'length fs is', len(fs)
             res = playGame(P, [nextf])
             fs = numpy.append(fs, nextf) #adds newest f to fs array
             results = numpy.append(results, res[0]) #updates results with newest result
+
+    print findBestHNA(fs, results)
 
     plt.figure()
     plt.hist((fs, fs[results>0.5], fs[results<0.5]))
