@@ -12,6 +12,8 @@ class model:
         self.A = A
     def __call__(self, f):
         return ((1-f+f*self.q)**self.N)*(1-self.A)
+    def derivative(self, f):
+        return self.N*(1-f+f*self.q)**(self.N-1)*(-1 + self.q)*(1-self.A)
     def __str__(self):
         return '<%g entropy, with %g "things" with %g states with error rate %g>' % (self.H, self.N, 1./self.q, self.A)
 
@@ -35,6 +37,33 @@ def findBayesProbability(P, fs, results):
         else:
             prob *= 1 - P(fs[i])
     return prob # it's actually log probability
+
+def findBestHNA(fs, results):
+    Ns_1d = numpy.arange(1, 30, 0.5)
+    Hs_1d = numpy.arange(1, 100, 0.5)
+    Ns, Hs = numpy.meshgrid(Ns_1d, Hs_1d)
+    prob = numpy.zeros_like(Ns)
+    dA = 0.01
+    maxprobability = 0
+    bestN = 0
+    bestH = 0
+    bestA = 0
+    for A in numpy.arange(dA/2.0, 1, dA): # sum over all possible A values
+        PP = model(Hs, Ns, A)
+        Pprior = 1.0/(1 + Hs/100)
+        thisprob = Pprior*findBayesProbability(PP, fs, results)*dA
+        maxprob_this_A = thisprob.max()
+        if maxprob_this_A > maxprobability:
+            i,j = numpy.unravel_index(thisprob.argmax(), thisprob.shape)
+            bestN = Ns[i,j]
+            bestH = Hs[i,j]
+            bestA = A
+            maxprobability = maxprob_this_A
+        else:
+            break # I'm guessing that probably we have surpassed the best A
+        #print 'maxprob_this_A for', A, 'is', maxprob_this_A
+    #print 'I think that', bestH, bestN, bestA, 'with prob', maxprobability
+    return model(bestH, bestN, bestA)
 
 def pickNextF(fs, results):
 	import random
@@ -94,35 +123,10 @@ def pickNextF(fs, results):
             rand_f = random.gauss(mu, sigma)
         return rand_f
 
-def findBestHNA(fs, results):
-    Ns_1d = numpy.arange(1, 30, 0.5)
-    Hs_1d = numpy.arange(1, 100, 0.5)
-    Ns, Hs = numpy.meshgrid(Ns_1d, Hs_1d)
-    prob = numpy.zeros_like(Ns)
-    dA = 0.01
-    maxprobability = 0
-    bestN = 0
-    bestH = 0
-    bestA = 0
-    for A in numpy.arange(dA/2.0, 1, dA): # sum over all possible A values
-        PP = model(Hs, Ns, A)
-        Pprior = 1.0/(1 + Hs/100)
-        thisprob = Pprior*findBayesProbability(PP, fs, results)*dA
-        maxprob_this_A = thisprob.max()
-        if maxprob_this_A > maxprobability:
-            i,j = numpy.unravel_index(thisprob.argmax(), thisprob.shape)
-            bestN = Ns[i,j]
-            bestH = Hs[i,j]
-            bestA = A
-            maxprobability = maxprob_this_A
-        #print 'maxprob_this_A for', A, 'is', maxprob_this_A
-    #print 'I think that', bestH, bestN, bestA, 'with prob', maxprobability
-    return bestH, bestN, bestA
-
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    P = model(26, 4, 0.1) # H, N, A
+    P = model(50, 8, 0.1) # H, N, A
 
     useDeterministic = False
     if useDeterministic:
@@ -140,7 +144,16 @@ if __name__ == '__main__':
             fs = numpy.append(fs, nextf) #adds newest f to fs array
             results = numpy.append(results, res[0]) #updates results with newest result
 
-    print findBestHNA(fs, results)
+    Pbest = findBestHNA(fs, results)
+    print 'Pbest is', Pbest
+    plt.figure()
+    fs_to_plot = 2**(numpy.arange(-30, 0, 0.1))
+    plt.plot(fs_to_plot, Pbest(fs_to_plot))
+    plt.plot(fs_to_plot, 1-4*numpy.abs(Pbest(fs_to_plot) - 0.5)**2) # Try this!
+    plt.plot(fs_to_plot, Pbest.derivative(fs_to_plot)/Pbest.derivative(fs_to_plot).min())
+    plt.plot(fs_to_plot, (1-4*numpy.abs(Pbest(fs_to_plot) - 0.5)**2 + Pbest(fs_to_plot))/2)
+    plt.xlabel('f')
+    plt.ylabel('Pbest(f)')
 
     plt.figure()
     plt.hist((fs, fs[results>0.5], fs[results<0.5]))
@@ -155,7 +168,7 @@ if __name__ == '__main__':
     dA = 0.1
     for A in numpy.arange(dA/2.0, 1, dA): # sum over all possible A values
         PP = model(Hs, Ns, A)
-        Pprior = 1.0/(1 + Hs/100)
+        Pprior = 1.0/(1 + Hs/50)
         thisprob = Pprior*findBayesProbability(PP, fs, results)*dA
         print 'prob of A =', A, 'is', sum(sum(thisprob))
         prob += thisprob

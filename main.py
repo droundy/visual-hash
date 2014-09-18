@@ -166,7 +166,7 @@ class Matching(BoxLayout):
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def Start(self):
-        self.entropy_label.text = 'Entropy:  %.1f' % self.e.estimate_entropy()
+        self.entropy_label.text = 'Entropy:  %.1f  f %g' % (self.e.estimate_entropy(), self.e.choose_bits_frac())
         self.right_button.text = 'Same'
         if self.img.have_next:
             self.differs = self.next_differs
