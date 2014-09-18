@@ -99,18 +99,21 @@ if __name__ == '__main__':
 
     P = model(26, 4, 0.05) # H, N, A
 
-    # fs = numpy.arange(0, 1, 0.0005)
-    # results = playGame(P, fs)
-    # print numpy.column_stack((fs, P(fs), results))
-
-    fs = numpy.array([0, 0.5, 1]) #starting f?
-    results = playGame(P, fs) #seed results
-    for i in range(100): #loop to generate further hash comparisons
-        nextf = pickNextF(fs, results)
-        print 'our next f is', nextf, 'and fs is', fs[-3:], 'length fs is', len(fs)
-        res = playGame(P, [nextf])
-        fs = numpy.append(fs, nextf) #adds newest f to fs array
-        results = numpy.append(results, res[0]) #updates results with newest result
+    useDeterministic = True
+    if useDeterministic:
+        random.seed(0)
+        fs = numpy.arange(0, 1, 0.001)
+        results = playGame(P, fs)
+        print 'total results', sum(results)
+    else:
+        fs = numpy.array([0, 0.5, 1]) #starting f?
+        results = playGame(P, fs) #seed results
+        for i in range(100): #loop to generate further hash comparisons
+            nextf = pickNextF(fs, results)
+            print 'our next f is', nextf, 'and fs is', fs[-3:], 'length fs is', len(fs)
+            res = playGame(P, [nextf])
+            fs = numpy.append(fs, nextf) #adds newest f to fs array
+            results = numpy.append(results, res[0]) #updates results with newest result
 
     plt.figure()
     plt.hist((fs, fs[results>0.5], fs[results<0.5]))
@@ -142,5 +145,15 @@ if __name__ == '__main__':
         labels[i] = '%.0f%% credible' % (100*sum(prob[prob>levels[i]]))
     cbar.ax.set_yticklabels(labels)
     plt.plot([P.N], [P.H], 'wx', markersize=30., markeredgewidth=3)
+
+    prob_H = numpy.zeros_like(Hs_1d)
+    for i in range(len(prob_H)):
+        prob_H[i] = numpy.sum(prob[i,:])
+    print 'max H', max(Hs_1d), 'min H', min(Hs_1d)
+    prob_H /= numpy.sum(prob_H)*(max(Hs_1d)-min(Hs_1d))/len(prob_H)
+    plt.figure()
+    plt.plot(Hs_1d, prob_H)
+    plt.xlabel('H')
+    plt.ylabel('probability per bit')
 
     plt.show()

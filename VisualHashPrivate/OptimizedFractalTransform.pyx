@@ -63,14 +63,14 @@ cdef Affine MakeAffine(random):
     # currently we always initialize pseudorandomly, but
     # eventually we'll want to generate this deterministically.
     a.theta = 2*M_PI*random.random()
-    a.compressme = random.signed_expovariate(0.8, 0.2)
+    a.compressme = random.signed_expovariate(0.8, 1./0.2)
     a.Mxx =  cos(a.theta)*a.compressme
     a.Mxy =  sin(a.theta)*a.compressme
     a.Myx = -sin(a.theta)*a.compressme
     a.Myy =  cos(a.theta)*a.compressme
     cdef double translation_scale = 0.8
-    a.Ox = random.signed_expovariate(0, translation_scale)
-    a.Oy = random.signed_expovariate(0, translation_scale)
+    a.Ox = random.signed_expovariate(0, 1./translation_scale)
+    a.Oy = random.signed_expovariate(0, 1./translation_scale)
     return a
 
 cdef Point affineTransform(Affine a, Point p) nogil:
@@ -91,9 +91,9 @@ cdef struct Fancy:
 cdef Fancy MakeFancy(random):
     cdef Fancy f
     f.a = MakeAffine(random)
-    f.spiralness = random.signed_expovariate(0, 3)
-    f.radius = random.signed_expovariate(.4, .2)
-    f.bounciness = random.signed_expovariate(2, 2)
+    f.spiralness = random.signed_expovariate(0, 1./3)
+    f.radius = random.signed_expovariate(.4, 1./.2)
+    f.bounciness = random.signed_expovariate(2, 1./2)
     f.bumps = random.randint(1, 4)
     return f
 
@@ -114,12 +114,12 @@ cdef struct Symmetry:
 cdef Symmetry MakeSymmetry(random):
     cdef Symmetry s
     cdef double theta = 2*M_PI*random.random()
-    cdef double translation_scale = 0.1
-    s.a.Ox = random.signed_expovariate(0, translation_scale)
-    s.a.Oy = random.signed_expovariate(0, translation_scale)
-    cdef double nnn = random.expovariate(1.0/3)
-    s.Nsym = 1 + <int>nnn
-    if s.Nsym == 1 and random.randint(0,1) == 0:
+    cdef double translation_scale = 0.2
+    s.a.Ox = random.signed_expovariate(0, 1./translation_scale)
+    s.a.Oy = random.signed_expovariate(0, 1./translation_scale)
+    cdef double nnn = random.expovariate(1.0/2)
+    s.Nsym = 1+<int>nnn
+    if s.Nsym < 2:
         # print 'Mirror plane'
         s.Nsym = 2
         theta = 2*M_PI*random.random()
@@ -186,10 +186,11 @@ cdef void place_point(double *h, Point p, double roundedness, double scaleup, in
     cdef int iy = <int>((y/sqrt(y*y + roundedness*x*x + 1)+1)/2*size)
     ix = ix % size
     iy = iy % size
-    h[0*(size*size) + ix*size + iy] += p.A
-    h[1*(size*size) + ix*size + iy] += p.R
-    h[2*(size*size) + ix*size + iy] += p.G
-    h[3*(size*size) + ix*size + iy] += p.B
+    cdef double weighting = 1.0/(x*x + y*y + 1)
+    h[0*(size*size) + ix*size + iy] += p.A*weighting
+    h[1*(size*size) + ix*size + iy] += p.R*weighting
+    h[2*(size*size) + ix*size + iy] += p.G*weighting
+    h[3*(size*size) + ix*size + iy] += p.B*weighting
 
 cdef Simulate(double *h, CMultiple t, Point p, int size):
     if t.Ntot == 0:
@@ -221,7 +222,7 @@ cdef Simulate(double *h, CMultiple t, Point p, int size):
                 h[k*(size*size) + i*size + j] = 0
     meandist /= norm
     # print 'meandist is', meandist
-    scale_up_by = 1.0/meandist
+    scale_up_by = 0.5/meandist
     with nogil:
         for i in range(100*size*size):
             place_point(h, p, t.roundedness, scale_up_by, size)
