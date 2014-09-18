@@ -53,7 +53,7 @@ def pickNextF(fs, results):
 	a gaussian distribution curve on it. This curve peaks at the center of the 
 	gap and through probability of random numbers being under the dist. curve, 
 	a higher percentage of next fs will fall in the area where there are currently fewer fs
-	located. This gaussian dist. curve does not have to belocated where the largest gap is,
+	located. This gaussian dist. curve does not have to be located where the largest gap is,
 	as it can be centered on any area of the P(f) curve where more information is wanted."""
 
 	for i in range(len(gap)): #there will be 1 more gap than fs
