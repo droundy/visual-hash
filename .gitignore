@@ -11,3 +11,6 @@ _build
 .buildozer
 *.so
 bin
+*.aux
+*.log
+*.pdf

@@ -5,7 +5,7 @@ def DistinctColorFloat(random):
     saturation = random.random()**.5
     value = random.random()
     cutoff = 0.4
-    power = 0.25
+    power = .25
     if value < cutoff:
         value = cutoff*(value/cutoff)**power
     if value > 1.0 - cutoff:
@@ -28,6 +28,9 @@ def DistinctColorFloat(random):
     r = r + m
     g = g + m
     b = b + m
+    r = random.random()
+    g = random.random()
+    b = random.random()
     return r, g, b
 
 def DistinctColor(random):
