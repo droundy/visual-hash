@@ -43,7 +43,7 @@ class Home(TabbedPanel):
 
 animtime = 1.0
 
-class BinaryEntropyEstimator(object):
+class BinaryEntropyEstimator(object):#dont keep design(probably)
     def __init__(self):
         self.bits = Estimator(0, 128, 0.1)
         self.choices = []

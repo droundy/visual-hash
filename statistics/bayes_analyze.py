@@ -14,6 +14,10 @@ class model:
         return ((1-f+f*self.q)**self.N)*(1-self.A)
     def derivative(self, f):
         return self.N*(1-f+f*self.q)**(self.N-1)*(-1 + self.q)*(1-self.A)
+    def C(self, f):
+        return (((2*self.N+1)*(1+f*(self.q-1))**(self.N+1)-(self.N+1)*(1+f*(self.q-1))**(2*self.N+1)*(1-self.A)-(2*self.N+1)+(self.N+1)*(1-self.A))
+        /((2*self.N+1)*(self.q**(self.N+1))-((self.N+1)*(self.q**(2*self.N+1))*(1-self.A))-(2*self.N+1)+(self.N+1)*(1-self.A)))
+
     def __str__(self):
         return '<%g entropy, with %g "things" with %g states with error rate %g>' % (self.H, self.N, 1./self.q, self.A)
 
@@ -45,7 +49,7 @@ def findBestHNA(fs, results):
     prob = numpy.zeros_like(Ns)
     dA = 0.01
     maxprobability = 0
-    bestN = 0
+    bestN = 1
     bestH = 0
     bestA = 0
     for A in numpy.arange(dA/2.0, 1, dA): # sum over all possible A values
@@ -66,62 +70,16 @@ def findBestHNA(fs, results):
     return model(bestH, bestN, bestA)
 
 def pickNextF(fs, results):
-	import random
-	import math
-	""" Choose the next f value to try an experiment on. """
-	sort_fs = sorted(fs) #sort the fs list into ascending order of values
+    import random
+    import math
+    
+    P = findBestHNA(fs, results)
+    R = random.random()
+    new_f= P.C(R)#fix me: find new f such that P.C(new_f) = R, solve for f using bisection(numerically)
+    return new_f
 
-	largest_gap = 0 #reset gap and track values to zero
-	track = 0
-	mu = 0
-	window = 0
-	i = 0
-	gap = numpy.zeros(len(fs)+1) #create an array to hold gap values
-	""" Choosing the next fs value by finding the largest current gap 
-	in the fs values and using that gap location to center
-	a gaussian distribution curve on it. This curve peaks at the center of the 
-	gap and through probability of random numbers being under the dist. curve, 
-	a higher percentage of next fs will fall in the area where there are currently fewer fs
-	located. This gaussian dist. curve does not have to be located where the largest gap is,
-	as it can be centered on any area of the P(f) curve where more information is wanted."""
 
-	for i in range(len(gap)): #there will be 1 more gap than fs
-	
-		if i == 0:
-			print"first"
-			gap[i] = sort_fs[i] 
-			'''
-			if sort_fs[i] <= .5001 :
-				largest_gap = 1-gap[i]			
-			else:
-				largest_gap = gap[i]
-			'''
-		elif i == len(sort_fs):
-			gap[i] = 1-sort_fs[i-1]
-			
-			if gap[i] >= largest_gap:
-				largest_gap = gap[i]
-				track = i #tracks the i'th value of where the largest gap occurs in sort_fs
-		else:
-			gap[i] = sort_fs[i] - sort_fs[i-1]
-			
-			if gap[i] >= largest_gap:
-				largest_gap = gap[i]
-				track = i
-	#print largest_gap,"lg"
-	#print sort_fs[track], sort_fs[track-1]
 
-		
-	window = sort_fs[track] - sort_fs[track-1] #defines the gap window
-	mu = sort_fs[track-1] + window/2 #sets variable mu to be centered on the gap
-	print mu, "mu"
-	sigma = window/2.0
-	scale = .3
-
-        rand_f = -1
-        while rand_f > 1 or rand_f < 0:
-            rand_f = random.gauss(mu, sigma)
-        return rand_f
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
