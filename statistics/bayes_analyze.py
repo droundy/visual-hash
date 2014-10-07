@@ -17,6 +17,16 @@ class model:
     def C(self, f):
         return (((2*self.N+1)*(1+f*(self.q-1))**(self.N+1)-(self.N+1)*(1+f*(self.q-1))**(2*self.N+1)*(1-self.A)-(2*self.N+1)+(self.N+1)*(1-self.A))
         /((2*self.N+1)*(self.q**(self.N+1))-((self.N+1)*(self.q**(2*self.N+1))*(1-self.A))-(2*self.N+1)+(self.N+1)*(1-self.A)))
+    def f_from_C(self, C):
+        """ computes the "f" that has value C for the method defined above (i.e. the method named C) """
+        fmin = 0
+        fmax = 1
+        for i in range(20):
+            if self.C(0.5*(fmin + fmax)) > C:
+                fmax = 0.5*(fmin + fmax)
+            else:
+                fmin = 0.5*(fmin + fmax)
+        return 0.5*(fmin + fmax)
 
     def __str__(self):
         return '<%g entropy, with %g "things" with %g states with error rate %g>' % (self.H, self.N, 1./self.q, self.A)
@@ -74,9 +84,8 @@ def pickNextF(fs, results):
     import math
     
     P = findBestHNA(fs, results)
-    R = random.random()
-    new_f= P.C(R)#fix me: find new f such that P.C(new_f) = R, solve for f using bisection(numerically)
-    return new_f
+    C = random.random()
+    return P.f_from_C(C) #  find new f such that P.C(new_f) = R, by solving for f using bisection(numerically)
 
 
 
