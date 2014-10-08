@@ -53,7 +53,7 @@ def findBayesProbability(P, fs, results):
     return prob # it's actually log probability
 
 def findBestHNA(fs, results):
-    Ns_1d = numpy.arange(1, 30, 0.5)
+    Ns_1d = numpy.arange(1, 50, 0.5)
     Hs_1d = numpy.arange(1, 100, 0.5)
     Ns, Hs = numpy.meshgrid(Ns_1d, Hs_1d)
     prob = numpy.zeros_like(Ns)
@@ -64,7 +64,8 @@ def findBestHNA(fs, results):
     bestA = 0
     for A in numpy.arange(dA/2.0, 1, dA): # sum over all possible A values
         PP = model(Hs, Ns, A)
-        Pprior = 1.0/(1 + Hs/100)
+        Pprior = 1.0/(1 + Hs/50)
+        Pprior[Ns > Hs] = 0 # we do not believe that we can have less than one "bit" per "thing"
         thisprob = Pprior*findBayesProbability(PP, fs, results)*dA
         maxprob_this_A = thisprob.max()
         if maxprob_this_A > maxprobability:
@@ -93,7 +94,7 @@ def pickNextF(fs, results):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    P = model(50, 8, 0.1) # H, N, A
+    P = model(50, 28, 0.1) # H, N, A
 
     useDeterministic = False
     if useDeterministic:
@@ -104,7 +105,7 @@ if __name__ == '__main__':
     else:
         fs = numpy.array([0, 0.5, 1]) #starting f?
         results = playGame(P, fs) #seed results
-        for i in range(1000): #loop to generate further hash comparisons
+        for i in range(100): #loop to generate further hash comparisons
             nextf = pickNextF(fs, results)
             print 'our next f is', nextf, 'and fs is', fs[-3:], 'length fs is', len(fs)
             res = playGame(P, [nextf])
@@ -128,14 +129,15 @@ if __name__ == '__main__':
 
     #plt.show()
 
-    Ns_1d = numpy.arange(1, 30, 0.5)
+    Ns_1d = numpy.arange(1, 100, 0.5)
     Hs_1d = numpy.arange(1, 100, 0.5)
     Ns, Hs = numpy.meshgrid(Ns_1d, Hs_1d)
     prob = numpy.zeros_like(Ns)
-    dA = 0.1
+    dA = 0.01
     for A in numpy.arange(dA/2.0, 1, dA): # sum over all possible A values
         PP = model(Hs, Ns, A)
         Pprior = 1.0/(1 + Hs/50)
+        Pprior[Ns > Hs] = 0 # we do not believe that we can have less than one "bit" per "thing"
         thisprob = Pprior*findBayesProbability(PP, fs, results)*dA
         print 'prob of A =', A, 'is', sum(sum(thisprob))
         prob += thisprob
@@ -152,6 +154,7 @@ if __name__ == '__main__':
         labels[i] = '%.0f%% credible' % (100*sum(prob[prob>levels[i]]))
     cbar.ax.set_yticklabels(labels)
     plt.plot([P.N], [P.H], 'wx', markersize=30., markeredgewidth=3)
+    plt.plot([Pbest.N], [Pbest.H], 'o', markersize=30., markeredgewidth=3, markerfacecolor='none', markeredgecolor='w')
 
     prob_H = numpy.zeros_like(Hs_1d)
     for i in range(len(prob_H)):
