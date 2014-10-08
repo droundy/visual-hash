@@ -23,6 +23,8 @@ from kivy import platform
 from kivy.properties import StringProperty, NumericProperty #, ConfigParserProperty
 import settings as mysettings
 
+import statistics.bayes_analyze as bayes
+
 import math
 
 from statistics.PBA import Estimator
@@ -66,52 +68,33 @@ class BinaryEntropyEstimator(object):#dont keep design(probably)
         self.bits.measured(self.choices[0], differs)
         self.choices = self.choices[1:]
 
-class EntropyEstimator(object):
+class BayesEntropyEstimator(object):#dont keep design(probably)
     def __init__(self):
-        self.logfrac = Estimator(-16, 0, 0.1)
-        self.golden = (math.sqrt(5)-1)/2
-        self.logfrac.add_frac(self.golden)
-        self.logfrac.add_frac(self.golden**2)
-        self.choices = []
-    def choose_bits_frac(self):
-        if SystemRandom().random() < 0.25:
-            frac = 0
-            self.choices.append(16)
-        else:
-            if SystemRandom().random() < 0.5:
-                logfrac = self.logfrac.frac_median(self.golden)
-            else:
-                logfrac = self.logfrac.frac_median(self.golden**2)
-            self.choices.append(logfrac)
-            frac = 2**logfrac
-        print 'frac', frac
-        return frac
+        self.P = bayes.model(30, 30, 0.1)
+        self.fs = [0.0, 1.0]
+        self.results = [1.0, 0.0]
+        self.nextf = 0.5
+    def choose_bits_frac(self, maxentropy=128):
+        print 'fs', self.fs
+        print 'results', self.results
+        self.nextf = bayes.pickNextF(self.fs, self.results)
+        return self.nextf
     def estimate_entropy(self):
-        g = self.golden
-        # the following two are swapped because of the difference
-        # between "probability of changing" and "probability of *not*
-        # changing."
-        fg2 = 1 - 2**(self.logfrac.frac_median(self.golden))
-        fg = 1 - 2**(self.logfrac.frac_median(self.golden**2))
-        print 'fg', fg, 'fg2', fg2
-        q = fg2/fg**2
-        if q > 1 or q < 0:
-            print '=====>>>>>>>>>> crazy q!', q, '<<<<<<<<<<<================'
-        print 'q', q, 'fg*q', fg*q, 'fg2*q', fg2*q
-        N = math.log(g)/math.log(fg2/fg)
-        H = N*math.log(1/q, 2)
-        print 'H', H, 'q', q, 'N', N, 'fg', fg, 'fg2', fg2
-        return H
+        self.P = bayes.findBestHNA(self.fs, self.results)
+        print self.P
+        return self.P.H
     def reset_entropy_estimate(self):
         self.__init__()
     def measured(self, differs):
-        print 'found', differs, 'at', self.choices[0]
-        print 'median', self.logfrac.median()
-        self.logfrac.measured(self.choices[0], not differs)
-        self.choices = self.choices[1:]
+        self.fs.append(self.nextf)
+        if differs:
+            self.results.append(0.0)
+        else:
+            self.results.append(1.0)
+        print 'found', differs, 'at', self.nextf
 
 class Matching(BoxLayout):
-    e = EntropyEstimator()
+    e = BayesEntropyEstimator()
     differs = False
     next_differs = False
     next_frac = 0
@@ -123,12 +106,15 @@ class Matching(BoxLayout):
         self.img.num += 1
         self.rnd.reset()
         if frac != 0:
+            # The following could either use TweakedRandom or
+            # BitTweaked random.  Either should work, and will give
+            # different statistical behavior (which could be handy).
             self.rnd = VisualHash.BitTweakedRandom(self.rnd, frac, self.img.num, self.img.num)
         NextImage(self.img, 512, self.rnd, hasher)
     def on_select(self, *args):
         self.img.current_im = ''
         self.rnd = VisualHash.StrongRandom(self.img.text)
-        self.e = EntropyEstimator()
+        self.e = BayesEntropyEstimator()
         self.left_button.disabled = True
         self.right_button.text = 'I remember this'
         self.img.x = self.width

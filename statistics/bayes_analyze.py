@@ -44,12 +44,12 @@ def findBayesProbability(P, fs, results):
     """ Find the Bayesian estimate of the probability that P is the
     correct hypothesis, given results from experiments at f values fs.
     """
-    prob = 1
+    prob = 1.0
     for i in range(len(fs)):
         if results[i] == 1:
-            prob *= P(fs[i]) # *= is the same as prob*P(fs[i])
+            prob *= P(1.0*fs[i]) # *= is the same as prob*P(fs[i])
         else:
-            prob *= 1 - P(fs[i])
+            prob *= 1 - P(1.0*fs[i])
     return prob # it's actually log probability
 
 def findBestHNA(fs, results):
@@ -59,12 +59,12 @@ def findBestHNA(fs, results):
     prob = numpy.zeros_like(Ns)
     dA = 0.01
     maxprobability = 0
-    bestN = 1
-    bestH = 0
-    bestA = 0
+    bestN = 1.0
+    bestH = 0.0
+    bestA = 0.0
     for A in numpy.arange(dA/2.0, 1, dA): # sum over all possible A values
         PP = model(Hs, Ns, A)
-        Pprior = 1.0/(1 + Hs/50)
+        Pprior = 1.0/(1 + Hs/50 + 2*A)
         Pprior[Ns > Hs] = 0 # we do not believe that we can have less than one "bit" per "thing"
         thisprob = Pprior*findBayesProbability(PP, fs, results)*dA
         maxprob_this_A = thisprob.max()
@@ -78,13 +78,16 @@ def findBestHNA(fs, results):
             break # I'm guessing that probably we have surpassed the best A
         #print 'maxprob_this_A for', A, 'is', maxprob_this_A
     #print 'I think that', bestH, bestN, bestA, 'with prob', maxprobability
+    print 'maxprobability', maxprobability, 'H', bestH, 'N', bestN, 'A', bestA
     return model(bestH, bestN, bestA)
 
 def pickNextF(fs, results):
     import random
     import math
-    
+
     P = findBestHNA(fs, results)
+    if random.random() < P.A:
+        return 0.0
     C = random.random()
     return P.f_from_C(C) #  find new f such that P.C(new_f) = R, by solving for f using bisection(numerically)
 
@@ -136,7 +139,7 @@ if __name__ == '__main__':
     dA = 0.01
     for A in numpy.arange(dA/2.0, 1, dA): # sum over all possible A values
         PP = model(Hs, Ns, A)
-        Pprior = 1.0/(1 + Hs/50)
+        Pprior = 1.0/(1 + Hs/50 + 2*A)
         Pprior[Ns > Hs] = 0 # we do not believe that we can have less than one "bit" per "thing"
         thisprob = Pprior*findBayesProbability(PP, fs, results)*dA
         print 'prob of A =', A, 'is', sum(sum(thisprob))
