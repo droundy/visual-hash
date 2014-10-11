@@ -82,13 +82,19 @@ class BayesEntropyEstimator(object):#dont keep design(probably)
         self.fs = [0.0, 1.0]
         self.results = [1.0, 0.0]
         self.nextf = 0.5
+        self.Puptodate = False
+    def _update_P(self):
+        if not self.Puptodate:
+            self.P = bayes.findBestHNA(self.fs, self.results)
+            self.Puptodate = True
     def choose_bits_frac(self, maxentropy=128):
         print 'fs', self.fs
         print 'results', self.results
-        self.nextf = bayes.pickNextF(self.fs, self.results)
+        self._update_P()
+        self.nextf = bayes.pickNextF(self.P)
         return self.nextf
     def estimate_entropy(self):
-        self.P = bayes.findBestHNA(self.fs, self.results)
+        self._update_P()
         print self.P
         return self.P.H
     def reset_entropy_estimate(self):
@@ -99,6 +105,7 @@ class BayesEntropyEstimator(object):#dont keep design(probably)
             self.results.append(0.0)
         else:
             self.results.append(1.0)
+        self.Puptodate = False
         print 'found', differs, 'at', self.nextf
 
 class Matching(BoxLayout):
@@ -135,8 +142,8 @@ class Matching(BoxLayout):
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Reset(), animtime)
     def Reset(self):
-        self.entropy_label.text = 'Entropy:  %.1f' % self.e.estimate_entropy()
         if self.img.have_next:
+            self.entropy_label.text = 'Entropy:  %.1f' % self.e.estimate_entropy()
             print 'Reset working'
             self.differs = self.next_differs
             im = self.img.next[0]
@@ -160,9 +167,9 @@ class Matching(BoxLayout):
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def Start(self):
-        self.entropy_label.text = 'Entropy:  %.1f  f %g' % (self.e.estimate_entropy(), self.e.choose_bits_frac())
         self.right_button.text = 'Same'
         if self.img.have_next:
+            self.entropy_label.text = 'Entropy:  %.1f  f %g' % (self.e.estimate_entropy(), self.e.choose_bits_frac())
             self.differs = self.next_differs
             print 'Start working'
             im = self.img.next[0]

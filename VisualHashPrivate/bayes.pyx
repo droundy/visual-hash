@@ -101,8 +101,7 @@ def findBestHNA(fs, results):
     print 'maxprobability', maxprobability, 'H', bestH, 'N', bestN, 'A', bestA
     return model(bestH, bestN, bestA)
 
-def pickNextF(fs, results):
-    P = findBestHNA(fs, results)
+def pickNextF(model P):
     # if random.random() < P.A:
     #     return 0.0
     C = random.random()
