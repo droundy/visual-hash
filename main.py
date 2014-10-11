@@ -6,6 +6,8 @@
 
 __version__ = '0.0.0'
 
+# import cProfile
+
 import os, sys, inspect
 from threading import Thread
 from Queue import Queue
@@ -108,6 +110,8 @@ class BayesEntropyEstimator(object):#dont keep design(probably)
         self.Puptodate = False
         print 'found', differs, 'at', self.nextf
 
+image_size = 512
+
 class Matching(BoxLayout):
     e = BayesEntropyEstimator()
     differs = False
@@ -125,7 +129,7 @@ class Matching(BoxLayout):
             # BitTweaked random.  Either should work, and will give
             # different statistical behavior (which could be handy).
             self.rnd = VisualHash.BitTweakedRandom(self.rnd, frac, self.img.num, self.img.num)
-        NextImage(self.img, 512, self.rnd, hasher)
+        NextImage(self.img, image_size, self.rnd, hasher)
     def on_select(self, *args):
         self.img.current_im = ''
         self.rnd = VisualHash.StrongRandom(self.img.text)
@@ -136,7 +140,7 @@ class Matching(BoxLayout):
         hasher = get_hasher()
         self.img.text = '%08d' % SystemRandom().randrange(0, 10**8)
         self.rnd = VisualHash.StrongRandom(self.img.text)
-        NextImage(self.img, 512, self.rnd, hasher)
+        NextImage(self.img, image_size, self.rnd, hasher)
         self.begin_next_img()
         anim = Animation(x=self.width, t='in_back', duration=animtime)
         anim.start(self.img)
@@ -242,7 +246,7 @@ class Memory(BoxLayout):
         if VisualHash.StrongRandom(self.original.text+'hi'+str(self.img.num)).random() < 0.25:
             self.next_differs = False
             rnd = VisualHash.StrongRandom(self.original.text)
-        NextImage(self.img, 512, rnd, hasher)
+        NextImage(self.img, image_size, rnd, hasher)
     def on_select(self, *args):
         self.bits = Estimator(0, 128, 0.1)
         self.left_button.disabled = True
@@ -253,7 +257,7 @@ class Memory(BoxLayout):
         self.original.text = '%08d' % SystemRandom().randrange(0, 10**8)
         rnd = VisualHash.StrongRandom(self.original.text)
         self.img.x = self.width
-        NextImage(self.original, 512, rnd, hasher)
+        NextImage(self.original, image_size, rnd, hasher)
         self.img.x = self.width
         self.begin_next_img()
         self.img.x = self.width
@@ -341,6 +345,7 @@ class NextImage(Thread):
         self.hasher = hasher
         self.start()
     def run(self):
+        print 'working on image'
         sz = self.size
         im = self.hasher(self.rnd, sz)
         # I don't know why, but the following three lines cause this to crash on MacOS!
@@ -348,38 +353,10 @@ class NextImage(Thread):
         #print 'texture is', texture
         #texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
         #texture.flip_vertical()
+        print 'done with image'
         self.next.next = [im]
         self.next.have_next = True
 
-class ImageUpdater(Thread):
-    def __init__(self, text, hasher, q, stop, minsize, maxsize, frac=0.0, num=1):
-        super(ImageUpdater, self).__init__()
-        self.text = text
-        self.minsize = minsize
-        self.maxsize = maxsize
-        self.size = minsize
-        self.hasher = hasher
-        self.q = q
-        self.stop = stop
-        self.frac = frac
-        self.num = num
-        self.start()
-    def run(self):
-        sz = self.minsize
-        while sz <= self.maxsize:
-            try:
-                self.stop.get(False)
-                return
-            except:
-                pass # we have not been asked to stop, yet!
-            print 'running', self.text, 'with sz', sz
-            rnd = VisualHash.BitTweakedRandom(self.text,self.frac, self.num,self.num)
-            if VisualHash.StrongRandom(self.text+'hi'+str(self.num)).random() < 0.25:
-                rnd = VisualHash.StrongRandom(self.text)
-            im = self.hasher(rnd, sz)
-            print (self.text, self.frac, self.num, sz)
-            self.q.put((sz, im.tostring()))
-            sz *= 2
 
 class MainApp(App):
     def build_config(self, config):
@@ -415,4 +392,5 @@ class MainApp(App):
 if __name__ == '__main__':
     os.umask(077)
     app = MainApp()
+    # cProfile.run('app.run()', 'visual.profile')
     app.run()

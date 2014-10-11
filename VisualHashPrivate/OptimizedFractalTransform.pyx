@@ -224,7 +224,7 @@ cdef Simulate(double *h, CMultiple t, Point p, int size):
     # print 'meandist is', meandist
     scale_up_by = 0.5/meandist
     with nogil:
-        for i in range(100*size*size):
+        for i in range(40*size*size):
             place_point(h, p, t.roundedness, scale_up_by, size)
             which = quickrand32(&r) % t.Ntot
             if which < t.N:

@@ -81,12 +81,12 @@ def findBestHNA(fs, results):
     cdef double bestH = 0.0
     cdef double bestA = 0.0
 
-    cdef double H, A, Pprior, prob
-    cdef double N = Nmin
-    while N <= Nmax:
-        N += dN
-        H = Hmin
-        while H <= Nmax:
+    cdef double H, A, N, Pprior, prob
+    H = Hmin
+    while H <= Hmax:
+        N = Nmin
+        N = H
+        while N <= H: # only allow N <= N one bit minimum entropy per "thing"
             A = Amin
             while A <= Amax:
                 Pprior = 1.0/(1 + H/50 + 2*A)
@@ -97,12 +97,13 @@ def findBestHNA(fs, results):
                     bestN = N
                     maxprobability = prob
                 A += dA
-            H += dH
+            N += dN
+        H += dH
     print 'maxprobability', maxprobability, 'H', bestH, 'N', bestN, 'A', bestA
     return model(bestH, bestN, bestA)
 
 def pickNextF(model P):
-    # if random.random() < P.A:
-    #     return 0.0
+    if random.random() < P.A:
+        return 0.0
     C = random.random()
     return P.f_from_C(C) #  find new f such that P.C(new_f) = R, by solving for f using bisection(numerically)
