@@ -12,7 +12,9 @@ except:
     ext = '.c'
 
 extensions = [Extension("VisualHashPrivate.OptimizedFractalTransform",
-                        ["VisualHashPrivate/OptimizedFractalTransform"+ext])]
+                        ["VisualHashPrivate/OptimizedFractalTransform"+ext]),
+              Extension("VisualHashPrivate.bayes",
+                        ["VisualHashPrivate/bayes"+ext])]
 
 if USE_CYTHON:
     from Cython.Build import cythonize

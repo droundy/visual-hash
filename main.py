@@ -23,7 +23,15 @@ from kivy import platform
 from kivy.properties import StringProperty, NumericProperty #, ConfigParserProperty
 import settings as mysettings
 
-import statistics.bayes_analyze as bayes
+try:
+    import pyximport; pyximport.install()
+except:
+    print '****** There does not seem to be cython available!!! *******'
+
+try:
+    import VisualHashPrivate.bayes as bayes
+except:
+    print 'no bayes!'
 
 import math
 

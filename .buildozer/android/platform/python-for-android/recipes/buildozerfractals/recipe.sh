@@ -26,6 +26,7 @@ function build_buildozerfractals() {
 
 	# fake try to be able to cythonize generated files
   cython $BUILD_buildozerfractals/VisualHashPrivate/OptimizedFractalTransform.pyx
+  cython $BUILD_buildozerfractals/VisualHashPrivate/bayes.pyx
 	$HOSTPYTHON setup.py build_ext --inplace
 	try $HOSTPYTHON setup.py install -O2
 

@@ -43,6 +43,7 @@ from VisualHashPrivate import FractalTransform
 try:
     from VisualHashPrivate import OptimizedFractalTransform
 except:
+    oopsies
     import VisualHashPrivate.FractalTransform as OptimizedFractalTransform
     print '****** Fractals will be very slow!!! *******'
 
