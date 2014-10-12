@@ -103,7 +103,10 @@ def findBestHNA(fs, results):
     return model(bestH, bestN, bestA)
 
 def pickNextF(model P):
-    if random.random() < P.A:
+    cdef double probsame = P.A
+    if P.A < 0.2:
+        probsame = 0.2
+    if random.random() < probsame:
         return 0.0
     C = random.random()
     return P.f_from_C(C) #  find new f such that P.C(new_f) = R, by solving for f using bisection(numerically)

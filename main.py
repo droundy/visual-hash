@@ -55,29 +55,6 @@ class Home(TabbedPanel):
 
 animtime = 1.0
 
-class BinaryEntropyEstimator(object):#dont keep design(probably)
-    def __init__(self):
-        self.bits = Estimator(0, 128, 0.1)
-        self.choices = []
-    def choose_bits_frac(self, maxentropy=128):
-        if SystemRandom().random() < 0.25:
-            frac = 0
-            self.choices.append(0)
-        else:
-            nbits = self.estimate_entropy()
-            self.choices.append(nbits)
-            frac = 1 - 0.5**(1.0/nbits)
-            print 'nbits', nbits, 'frac', frac
-        return frac
-    def estimate_entropy(self):
-         return self.bits.median()
-    def reset_entropy_estimate(self):
-        self.__init__()
-    def measured(self, differs):
-        print 'found', differs, 'at', self.choices[0]
-        self.bits.measured(self.choices[0], differs)
-        self.choices = self.choices[1:]
-
 class BayesEntropyEstimator(object):#dont keep design(probably)
     def __init__(self):
         self.P = bayes.model(30, 30, 0.1)
@@ -101,8 +78,8 @@ class BayesEntropyEstimator(object):#dont keep design(probably)
         return self.P.H
     def reset_entropy_estimate(self):
         self.__init__()
-    def measured(self, differs):
-        self.fs.append(self.nextf)
+    def measured(self, f, differs):
+        self.fs.append(f)
         if differs:
             self.results.append(0.0)
         else:
@@ -110,7 +87,7 @@ class BayesEntropyEstimator(object):#dont keep design(probably)
         self.Puptodate = False
         print 'found', differs, 'at', self.nextf
 
-image_size = 512
+image_size = 300
 
 class Matching(BoxLayout):
     e = BayesEntropyEstimator()
@@ -124,6 +101,7 @@ class Matching(BoxLayout):
         frac = self.e.choose_bits_frac()
         self.img.num += 1
         self.rnd.reset()
+        print 'working on image with frac', frac
         if frac != 0:
             # The following could either use TweakedRandom or
             # BitTweaked random.  Either should work, and will give
@@ -173,17 +151,19 @@ class Matching(BoxLayout):
     def Start(self):
         self.right_button.text = 'Same'
         if self.img.have_next:
-            self.entropy_label.text = 'Entropy:  %.1f  f %g' % (self.e.estimate_entropy(), self.e.choose_bits_frac())
             self.differs = self.next_differs
             print 'Start working'
             im = self.img.next[0]
             self.img.old_im = self.img.current_im
             self.img.current_im = im.tostring()
+            assert(not (self.e.nextf == 0 and self.img.current_im != self.img.old_im))
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
             texture.flip_vertical()
             self.img.texture = texture
+            self.img.thisf = self.e.nextf
             self.begin_next_img()
+            self.entropy_label.text = 'Entropy:  %.1f  f %g' % (self.e.estimate_entropy(), self.img.thisf)
         else:
             print 'Start pending'
             self.left_button.disabled = True
@@ -195,14 +175,22 @@ class Matching(BoxLayout):
         self.left_button.disabled = False
         self.right_button.disabled = False
     def ItMatches(self):
-        print 'same:', self.img.current_im != self.img.old_im
-        self.e.measured(False)
+        assert(not (self.img.thisf == 0 and self.img.current_im != self.img.old_im))
+        if self.img.current_im == self.img.old_im:
+            print 'you are correct, it is same', self.img.thisf
+        else:
+            print 'you are wrong!!! it differs!', self.img.thisf
+        self.e.measured(self.img.thisf, False)
         anim = Animation(x=self.width, duration=animtime)
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def ItDiffers(self):
-        print 'differs:', self.img.current_im != self.img.old_im
-        self.e.measured(True)
+        assert(not (self.img.thisf == 0 and self.img.current_im != self.img.old_im))
+        if self.img.current_im != self.img.old_im:
+            print 'you are correct, it differs', self.img.thisf
+        else:
+            print 'you are wrong!!! it was same', self.img.thisf
+        self.e.measured(self.img.thisf, True)
         anim = Animation(x=-self.width, duration=animtime)
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
@@ -348,11 +336,6 @@ class NextImage(Thread):
         print 'working on image'
         sz = self.size
         im = self.hasher(self.rnd, sz)
-        # I don't know why, but the following three lines cause this to crash on MacOS!
-        #texture = Texture.create(size=im.size)
-        #print 'texture is', texture
-        #texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
-        #texture.flip_vertical()
         print 'done with image'
         self.next.next = [im]
         self.next.have_next = True
