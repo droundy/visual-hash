@@ -120,7 +120,7 @@ class Matching(BoxLayout):
         self.rnd = VisualHash.StrongRandom(self.img.text)
         NextImage(self.img, image_size, self.rnd, hasher)
         self.begin_next_img()
-        anim = Animation(x=self.width, t='in_back', duration=animtime)
+        anim = Animation(x=1.1*self.width, t='in_back', duration=animtime)
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Reset(), animtime)
     def Reset(self):
@@ -145,7 +145,7 @@ class Matching(BoxLayout):
         anim = Animation(x=0, t='in_back', duration=animtime)
         anim.start(self.img)
     def Begin(self):
-        anim = Animation(x=self.width, duration=animtime)
+        anim = Animation(x=1.1*self.width, duration=animtime)
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def Start(self):
@@ -181,7 +181,7 @@ class Matching(BoxLayout):
         else:
             print 'you are wrong!!! it differs!', self.img.thisf
         self.e.measured(self.img.thisf, False)
-        anim = Animation(x=self.width, duration=animtime)
+        anim = Animation(x=1.1*self.width, duration=animtime)
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def ItDiffers(self):
@@ -191,7 +191,7 @@ class Matching(BoxLayout):
         else:
             print 'you are wrong!!! it was same', self.img.thisf
         self.e.measured(self.img.thisf, True)
-        anim = Animation(x=-self.width, duration=animtime)
+        anim = Animation(x=-1.1*self.width, duration=animtime)
         anim.start(self.img)
         Clock.schedule_once(lambda dt: self.Start(), animtime)
 
