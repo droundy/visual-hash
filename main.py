@@ -213,7 +213,8 @@ class Pairs(BoxLayout):
             # The following could either use TweakedRandom or
             # BitTweaked random.  Either should work, and will give
             # different statistical behavior (which could be handy).
-            self.rnd2 = VisualHash.BitTweakedRandom(self.rnd, frac,
+            self.rnd2 = VisualHash.BitTweakedRandom(VisualHash.StrongRandom(self.img.text + str(self.img.num)),
+                                                    frac,
                                                     self.img.num+1,
                                                     self.img.num+1)
         else:
@@ -270,7 +271,7 @@ class Pairs(BoxLayout):
 
             self.img.thisf = self.e.nextf
             self.begin_next_img()
-            self.entropy_label.text = 'Entropy:  %.1f  f %g' % (self.e.estimate_entropy(), self.img.thisf)
+            self.entropy_label.text = 'Entropy:  %.1f' % (self.e.estimate_entropy())
         else:
             print 'Start pending'
             Clock.schedule_once(lambda dt: self.Start(), 0.25)
