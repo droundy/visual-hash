@@ -87,7 +87,7 @@ class BayesEntropyEstimator(object):#dont keep design(probably)
         self.Puptodate = False
         print 'found', differs, 'at', self.nextf
 
-image_size = 300
+image_size = 400
 
 class Matching(BoxLayout):
     e = BayesEntropyEstimator()
@@ -118,7 +118,6 @@ class Matching(BoxLayout):
         hasher = get_hasher()
         self.img.text = '%08d' % SystemRandom().randrange(0, 10**8)
         self.rnd = VisualHash.StrongRandom(self.img.text)
-        NextImage(self.img, image_size, self.rnd, hasher)
         self.begin_next_img()
         anim = Animation(x=1.1*self.width, t='in_back', duration=animtime)
         anim.start(self.img)
@@ -193,6 +192,99 @@ class Matching(BoxLayout):
         self.e.measured(self.img.thisf, True)
         anim = Animation(x=-1.1*self.width, duration=animtime)
         anim.start(self.img)
+        Clock.schedule_once(lambda dt: self.Start(), animtime)
+
+
+class Pairs(BoxLayout):
+    e = BayesEntropyEstimator()
+    differs = False
+    next_differs = False
+    next_frac = 0
+    def begin_next_img(self):
+        # pick the next image to test against, and start working on
+        # the hashing.
+        hasher = get_hasher()
+        frac = self.e.choose_bits_frac()
+        self.img.num += 1
+        self.rnd.reset()
+        print 'working on image with frac', frac
+        self.rnd = VisualHash.StrongRandom(self.img.text + str(self.img.num))
+        if frac != 0:
+            # The following could either use TweakedRandom or
+            # BitTweaked random.  Either should work, and will give
+            # different statistical behavior (which could be handy).
+            self.rnd2 = VisualHash.BitTweakedRandom(self.rnd, frac,
+                                                    self.img.num+1,
+                                                    self.img.num+1)
+        else:
+            self.rnd2 = VisualHash.StrongRandom(self.img.text + str(self.img.num))
+        NextImage(self.img, image_size, self.rnd, hasher)
+        NextImage(self.img2, image_size, self.rnd2, hasher)
+    def anim_in(self):
+        wiggle = int((self.img.width - self.img.height)/2)
+        print 'wiggle', wiggle, 'versus', self.width
+        anim = Animation(x=SystemRandom().randrange(-wiggle,wiggle),
+                         t='out_back', duration=animtime)
+        anim.start(self.img)
+        anim = Animation(x=SystemRandom().randrange(-wiggle,wiggle),
+                         t='out_back', duration=animtime)
+        anim.start(self.img2)
+    def anim_out(self):
+        anim = Animation(x=1.1*self.width, duration=animtime)
+        anim.start(self.img)
+        anim = Animation(x=-1.1*self.width, duration=animtime)
+        anim.start(self.img2)
+        self.left_button.disabled = True
+        self.right_button.disabled = True
+    def on_select(self, *args):
+        self.img.current_im = ''
+        self.img2.current_im = ''
+        self.rnd = VisualHash.StrongRandom(self.img.text)
+        self.e = BayesEntropyEstimator()
+        self.img.x = self.width
+        self.img2.x = -self.width
+        hasher = get_hasher()
+        self.img.text = '%08d' % SystemRandom().randrange(0, 10**8)
+        self.rnd = VisualHash.StrongRandom(self.img.text)
+        self.rnd2 = VisualHash.StrongRandom(self.img.text)
+        self.begin_next_img()
+        self.anim_out()
+        Clock.schedule_once(lambda dt: self.Start(), animtime)
+    def Start(self):
+        if self.img.have_next and self.img2.have_next:
+            self.differs = self.next_differs
+            print 'Start working'
+            im = self.img.next[0]
+            self.img.current_im = im.tostring()
+            texture = Texture.create(size=im.size)
+            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            texture.flip_vertical()
+            self.img.texture = texture
+
+            im = self.img2.next[0]
+            self.img2.current_im = im.tostring()
+            texture = Texture.create(size=im.size)
+            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            texture.flip_vertical()
+            self.img2.texture = texture
+
+            self.img.thisf = self.e.nextf
+            self.begin_next_img()
+            self.entropy_label.text = 'Entropy:  %.1f  f %g' % (self.e.estimate_entropy(), self.img.thisf)
+        else:
+            print 'Start pending'
+            Clock.schedule_once(lambda dt: self.Start(), 0.25)
+            return
+        self.anim_in()
+        self.left_button.disabled = False
+        self.right_button.disabled = False
+    def ItMatches(self):
+        self.e.measured(self.img.thisf, False)
+        self.anim_out()
+        Clock.schedule_once(lambda dt: self.Start(), animtime)
+    def ItDiffers(self):
+        self.e.measured(self.img.thisf, True)
+        self.anim_out()
         Clock.schedule_once(lambda dt: self.Start(), animtime)
 
 def get_hasher():

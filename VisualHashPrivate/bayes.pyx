@@ -68,7 +68,7 @@ def findBestHNA(fs, results):
     cdef double dN = 0.5
 
     cdef double Hmin = 1
-    cdef double Hmax = 100
+    cdef double Hmax = 500
     cdef double dH = 0.5
 
     cdef double dA = 0.01
