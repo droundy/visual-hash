@@ -57,6 +57,7 @@
     img2: img2
     entropy_label: entropy_label
     orientation: 'vertical'
+    spacing: sp(25)
     Label:
         id: entropy_label
         size_hint: 1, None
@@ -69,6 +70,14 @@
         x: root.width
         num: 0
         have_next: False
+        canvas.before:
+            PushMatrix
+            Rotate:
+                axis: 0,0,1
+                angle: root.angle1
+                origin: self.center
+        canvas.after:
+            PopMatrix
     Image:
         allow_stretch: True
         text: 'matching1'
@@ -76,10 +85,20 @@
         x: -root.width
         num: 0
         have_next: False
+        canvas.before:
+            PushMatrix
+            Rotate:
+                axis: 0,0,1
+                angle: root.angle2
+                origin: self.center
+        canvas.after:
+            PopMatrix
     BoxLayout:
         size_hint: 1, None
         height: sp(80)
         orientation: 'horizontal'
+        padding: [sp(5),sp(25),sp(5),sp(5)]
+        spacing: sp(5)
         Button:
             id: left_button
             text: 'Different'

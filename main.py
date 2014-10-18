@@ -197,6 +197,8 @@ class Matching(BoxLayout):
 
 class Pairs(BoxLayout):
     e = BayesEntropyEstimator()
+    angle1 = NumericProperty(0)
+    angle2 = NumericProperty(0)
     differs = False
     next_differs = False
     next_frac = 0
@@ -219,8 +221,8 @@ class Pairs(BoxLayout):
                                                     self.img.num+1)
         else:
             self.rnd2 = VisualHash.StrongRandom(self.img.text + str(self.img.num))
-        NextImage(self.img, image_size, self.rnd, hasher)
-        NextImage(self.img2, image_size, self.rnd2, hasher)
+        NextImage(self.img, 200, self.rnd, hasher)
+        NextImage(self.img2, 200, self.rnd2, hasher)
     def anim_in(self):
         wiggle = int((self.img.width - self.img.height)/2)
         print 'wiggle', wiggle, 'versus', self.width
@@ -276,6 +278,8 @@ class Pairs(BoxLayout):
             print 'Start pending'
             Clock.schedule_once(lambda dt: self.Start(), 0.25)
             return
+        self.angle1 = SystemRandom().random()*60 - 30
+        self.angle2 = SystemRandom().random()*60 - 30
         self.anim_in()
         self.left_button.disabled = False
         self.right_button.disabled = False
