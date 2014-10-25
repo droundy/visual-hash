@@ -7,6 +7,10 @@
 from __future__ import division
 
 import random as random
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
+
+cdef double Prob(double H, double N, double A, double f) nogil:
+    return ((1-f+f*(2.0**(-H/N)))**N)*(1-A)
 
 cdef class model:
     cdef double N, H, q, A
@@ -62,10 +66,24 @@ def findBayesProbability(model P, fs, results):
             prob *= 1 - P(1.0*fs[i])
     return prob # it's actually log probability
 
+cdef double cfindBayesProbability(double H, double N, double A,
+                                  double *fs, double *results, int length) nogil:
+    """ Find the Bayesian estimate of the probability that P is the
+    correct hypothesis, given results from experiments at f values fs.
+    """
+    cdef double prob = 1.0
+    cdef int i
+    for i in range(length):
+        if results[i] == 1:
+            prob *= Prob(H, N, A, fs[i])
+        else:
+            prob *= 1 - Prob(H, N, A, fs[i])
+    return prob
+
 def findBestHNA(fs, results):
     cdef double Nmin = 1
     cdef double Nmax = 50
-    cdef double dN = 0.5
+    cdef double dN = 1.0
 
     cdef double Hmin = 1
     cdef double Hmax = 512
@@ -82,15 +100,23 @@ def findBestHNA(fs, results):
     cdef double bestA = 0.0
 
     cdef double H, A, N, Pprior, prob
+    cdef int Len = len(results)
+    cdef double *fs_array = <double *>PyMem_Malloc(Len*sizeof(double))
+    cdef double *results_array = <double *>PyMem_Malloc(Len*sizeof(double))
+    for i in range(Len):
+        fs_array[i] = fs[i]
+        results_array[i] = results[i]
     H = Hmin
-    while H <= Hmax:
+    with nogil:
+      while H <= Hmax:
         N = Nmin
-        N = H
+        N = H/2 + 1 # Hokey alternative to Nmin to speed things up a bit
         while N <= H: # only allow N <= N one bit minimum entropy per "thing"
             A = Amin
             while A <= Amax:
                 Pprior = 1.0/(1 + H/50 + 2*A)
-                prob = Pprior*findBayesProbability(model(H,N,A),fs,results)*dA
+                prob = Pprior*cfindBayesProbability(H,N,A,
+                                                    fs_array,results_array,Len)*dA
                 if prob > maxprobability:
                     bestH = H
                     bestA = A
@@ -100,6 +126,8 @@ def findBestHNA(fs, results):
             N += dN
         H += dH
     print 'maxprobability', maxprobability, 'H', bestH, 'N', bestN, 'A', bestA
+    PyMem_Free(fs_array)
+    PyMem_Free(results_array)
     return model(bestH, bestN, bestA)
 
 def pickNextF(model P):

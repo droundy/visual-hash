@@ -129,9 +129,9 @@ class BitTweakedRandom(StrongRandom):
             string.random()
             string.reset()
             self._random = string
-            print 'got good random with', fraction
+            #print 'got good random with', fraction
         except:
-            print 'got string random'
+            #print 'got string random'
             self._random = StrongRandom(string)
         self.fraction = fraction
         self.tweaker = StrongRandom(seed1)
