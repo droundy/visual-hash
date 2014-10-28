@@ -36,7 +36,7 @@ setup(
         ],
     license = "BSD",
     name = "visual-hash",
-    version = "0.0.0.15",
+    version = "0.0.0.16",
     url = "https://github.com/droundy/visual-hash",
     author = "David Roundy",
     author_email = "daveroundy@gmail.com",
