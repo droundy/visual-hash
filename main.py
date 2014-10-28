@@ -12,6 +12,7 @@ import os, sys, inspect
 from threading import Thread
 from Queue import Queue
 
+from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.metrics import sp
 from kivy.app import App
@@ -221,10 +222,32 @@ class Pairs(BoxLayout):
     differs = False
     next_differs = False
     next_frac = 0
-    def on_keyboard(key, scancode, codepoint, modifier):
-        print key, scancode, codepoint, modifier
-    def on_key_down(key, scancode, codepoint):
-        print 'keydown', key, scancode, codepoint
+    def __init__(self, **kwargs):
+        super(Pairs, self).__init__(**kwargs)
+        self._keyboard = Window.request_keyboard(
+            self._keyboard_closed, self, 'text')
+        if self._keyboard.widget:
+            # If it exists, this widget is a VKeyboard object which you can use
+            # to change the keyboard layout.
+            pass
+        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+    def _keyboard_closed(self):
+        print('My keyboard have been closed!')
+        self._keyboard.unbind(on_key_down=self._on_keyboard_down)
+        self._keyboard = None
+    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        if keycode[1] == 'left':
+            self.ItDiffers()
+        elif keycode[1] == 'right':
+            self.ItMatches()
+        elif keycode[1] == 'escape':
+            keyboard.release()
+            return False # exit the game!
+        else:
+            print 'keycode', keycode, 'unrecognized'
+        # Return True to accept the key. Otherwise, it will be used by
+        # the system.
+        return True
     def begin_next_img(self):
         # pick the next image to test against, and start working on
         # the hashing.
