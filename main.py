@@ -464,7 +464,7 @@ class TextHash(BoxLayout):
     def on_text(self, *args):
         rnd = VisualHash.StrongRandom(self.text)
         hasher = get_hasher()
-        NextImage(self.thehash, 256, lambda: rnd, hasher)
+        NextImage(self.thehash, 512, lambda: rnd, hasher)
         Clock.schedule_once(lambda dt: self.update_image(), 0.5)
 
 class NextImage(Thread):
