@@ -112,7 +112,6 @@ class Matching(BoxLayout):
     e = BayesEntropyEstimator()
     differs = False
     next_differs = False
-    next_frac = 0
     def begin_next_img(self):
         # pick the next image to test against, and start working on
         # the hashing.
@@ -127,7 +126,7 @@ class Matching(BoxLayout):
             # BitTweaked random.  Either should work, and will give
             # different statistical behavior (which could be handy).
             self.rnd = VisualHash.BitTweakedRandom(self.rnd, frac, self.img.num, self.img.num)
-        NextImage(self.img, image_size, self.rnd, hasher)
+        NextImage(self.img, image_size, lambda: self.rnd, hasher)
     def on_select(self, *args):
         self.img.current_im = ''
         self.rnd = VisualHash.StrongRandom(self.img.text)
@@ -221,7 +220,6 @@ class Pairs(BoxLayout):
     angle2 = NumericProperty(0)
     differs = False
     next_differs = False
-    next_frac = 0
     def __init__(self, **kwargs):
         super(Pairs, self).__init__(**kwargs)
         self._keyboard = Window.request_keyboard(
