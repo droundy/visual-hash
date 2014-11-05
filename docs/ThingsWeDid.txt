@@ -1,0 +1,36 @@
+Plans for Hash Game:
+The different visual hashes should occur in the following frequencies:
+    60% - Fractal
+    15% - Hex
+    10% - Identicon
+    10% - Tflag
+    05% - flag
+
+variable = random.random()
+if varaible >.40:
+    hashtype = fractal
+    elif variable <= .40 and > .25:
+        hashtype = hex
+    elif variable <= .25 and >.15:
+        hashtype = indenticon
+    elif variable <=.15 and >.1:
+        hashtype = tflag
+    else hashtype = flag
+
+There should be a setting to have the random rotation of
+visual hashes activated instead of just one type.
+
+The values of H, N, and A should be:
+    H - 100
+    N - 100
+    A - .005
+
+These values seem to give hashes that are different enough
+but also similar enough to cause the player to have to try.
+
+The data needed for collection is the following:
+    1. Hash type
+    2. f value
+    3. Are two hashes are the same
+    4. Human repsonse, 1 or 0
+

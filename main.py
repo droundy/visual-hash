@@ -108,6 +108,10 @@ class BayesEntropyEstimator(object):
 
 image_size = 400
 
+def pickFrac(H, N, A):
+    P = bayes.model(H, N, A)
+    return bayes.pickNextF(P)
+
 class Matching(BoxLayout):
     e = BayesEntropyEstimator()
     differs = False
@@ -137,9 +141,10 @@ class Matching(BoxLayout):
     def begin_next_img(self):
         # pick the next image to test against, and start working on
         # the hashing.
-        hasher = get_hasher()
+        hasher, = get_hasher()
         print 'finding frac in matching'
-        frac = self.e.choose_bits_frac()
+        #frac = self.e.choose_bits_frac()
+        frac = pickFrac(100, 100, 0.005)
         self.img.num += 1
         self.rnd.reset()
         #print 'working on image with frac', frac
@@ -157,7 +162,7 @@ class Matching(BoxLayout):
         self.left_button.disabled = True
         self.right_button.text = 'I remember this'
         self.img.x = self.width
-        hasher = get_hasher()
+        hasher, = get_hasher()
         self.img.text = '%08d' % SystemRandom().randrange(0, 10**8)
         self.rnd = VisualHash.StrongRandom(self.img.text)
         self.begin_next_img()
@@ -248,6 +253,8 @@ class Pairs(BoxLayout):
         self._keyboard = Window.request_keyboard(
             self._keyboard_closed, self, 'text')
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        self.datafile = open('pairs.csv', 'a')
+        self.newkind = 'nothing'
     def _keyboard_closed(self):
         print('My keyboard have been closed!')
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -268,7 +275,8 @@ class Pairs(BoxLayout):
     def begin_next_img(self):
         # pick the next image to test against, and start working on
         # the hashing.
-        hasher = get_hasher()
+        self.kind = self.newkind
+        hasher, self.newkind = get_hasher()
         self.img.num += 1
         self.rnd.reset()
         self.rnd = VisualHash.StrongRandom(self.img.text + str(self.img.num))
@@ -310,7 +318,6 @@ class Pairs(BoxLayout):
         self.e = BayesEntropyEstimator()
         self.img.x = self.width
         self.img2.x = -self.width
-        hasher = get_hasher()
         self.img.text = '%08d' % SystemRandom().randrange(0, 10**8)
         self.rnd = VisualHash.StrongRandom(self.img.text)
         self.rnd2 = VisualHash.StrongRandom(self.img.text)
@@ -327,6 +334,7 @@ class Pairs(BoxLayout):
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
             texture.flip_vertical()
             self.img.texture = texture
+            self.img.image = im
 
             im = self.img2.next[0]
             self.img2.current_im = im.tostring()
@@ -334,6 +342,7 @@ class Pairs(BoxLayout):
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
             texture.flip_vertical()
             self.img2.texture = texture
+            self.img2.image = im
 
             self.img.thisf = self.e.nextf
             self.begin_next_img()
@@ -347,20 +356,42 @@ class Pairs(BoxLayout):
         self.anim_in()
         self.left_button.disabled = False
         self.right_button.disabled = False
+    def PrintToFile(self, matches_value):
+        self.datafile.write('%s, %f, %d, %d\n' % (self.kind,
+                                                  self.img.thisf,
+                                                  matches_value,
+                                                  self.img.image.tostring() != self.img2.image.tostring()))
+        self.datafile.flush()
     def ItMatches(self):
         self.e.measured(self.img.thisf, False)
+        self.PrintToFile(False)
         self.anim_out()
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def ItDiffers(self):
         self.e.measured(self.img.thisf, True)
+        self.PrintToFile(True)
         self.anim_out()
         Clock.schedule_once(lambda dt: self.Start(), animtime)
 
 def get_hasher():
     # pick the next image to test against, and start working on
     # the hashing.
-    kind = app.config.getdefault('game', 'hashtype', 'oops')
+    kind = app.config.getdefault('game', 'hashtype', 'default')
     hasher = VisualHash.Flag
+
+    if kind == 'default':
+        variable = SystemRandom().random()
+        if variable >.40:
+            kind = 'fractal'
+        elif .25 < variable <= .40:
+            kind = 'hex128'
+        elif .15 < variable <= .25:
+            kind = 'identicon'
+        elif .05 < variable <=.15:
+            kind = 'tflag'
+        else:
+            kind = 'flag'
+
     if kind == 'tflag':
         hasher = VisualHash.TFlag
     if kind == 'fractal':
@@ -375,7 +406,7 @@ def get_hasher():
         hasher = VisualHash.MakeHex(64//4)
     if kind == 'hex128':
         hasher = VisualHash.MakeHex(128//4)
-    return hasher
+    return hasher, kind
 
 class TextHash(BoxLayout):
     def on_select(self, *args):
@@ -392,7 +423,7 @@ class TextHash(BoxLayout):
             return
     def on_text(self, *args):
         rnd = VisualHash.StrongRandom(self.text)
-        hasher = get_hasher()
+        hasher, = get_hasher()
         NextImage(self.thehash, 512, lambda: rnd, hasher)
         Clock.schedule_once(lambda dt: self.update_image(), 0.5)
 

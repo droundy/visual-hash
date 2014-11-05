@@ -29,7 +29,7 @@ json = """
       "desc": "Type of hash ",
       "section": "game",
       "key": "hashtype",
-      "options": ["hex32", "hex64", "hex128",
+      "options": ["default", "hex32", "hex64", "hex128",
                   "flag", "tflag", "fractal", "identicon", "randomart"] }
 
 ]
@@ -38,4 +38,4 @@ json = """
 defaults = { 'username': socket.gethostname(),
              'devicename': socket.gethostname(),
              'difficulty': 'normal',
-             'hashtype': 'flag' }
+             'hashtype': 'default' }
