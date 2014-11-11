@@ -108,6 +108,10 @@ class BayesEntropyEstimator(object):
 
 image_size = 400
 
+def pickFrac(H, N, A):
+    P = bayes.model(H, N, A)
+    return bayes.pickNextF(P)
+
 class Matching(BoxLayout):
     e = BayesEntropyEstimator()
     differs = False
@@ -118,7 +122,8 @@ class Matching(BoxLayout):
         # the hashing.
         hasher = get_hasher()
         print 'finding frac in matching'
-        frac = self.e.choose_bits_frac()
+        #frac = self.e.choose_bits_frac()
+        frac = pickFrac(100, 100, 0.005)
         self.img.num += 1
         self.rnd.reset()
         #print 'working on image with frac', frac
@@ -342,8 +347,22 @@ class Pairs(BoxLayout):
 def get_hasher():
     # pick the next image to test against, and start working on
     # the hashing.
-    kind = app.config.getdefault('game', 'hashtype', 'oops')
+    kind = app.config.getdefault('game', 'hashtype', 'default')
     hasher = VisualHash.Flag
+
+    if kind == 'default':
+        variable = SystemRandom().random()
+        if variable >.40:
+            kind = 'fractal'
+        elif .25 < variable <= .40:
+            kind = 'hex128'
+        elif .15 < variable <= .25:
+            kind = 'identicon'
+        elif .05 < variable <=.15:
+            kind = 'tflag'
+        else:
+            kind = 'flag'
+
     if kind == 'tflag':
         hasher = VisualHash.TFlag
     if kind == 'fractal':
