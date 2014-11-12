@@ -9,7 +9,5 @@ The data needed for collection is the following:
 
 
 
-* Format 128-bit hex more nicely.
-
 * Decide on "scores" to show users instead of entropy?
 

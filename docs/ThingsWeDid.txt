@@ -34,3 +34,5 @@ The data needed for collection is the following:
     3. Are two hashes are the same
     4. Human repsonse, 1 or 0
 
+* Format 128-bit hex more nicely.
+

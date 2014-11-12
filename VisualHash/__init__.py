@@ -148,7 +148,7 @@ def RandomArt(random = StrongRandom(""), size = 128):
     img = randomart.Create(random, size)
     return img
 
-def _StringToImage(text, size = 128):
+def _StringsToImage(texts, size = 128):
     """
     Create an image from a string.
     """
@@ -156,24 +156,44 @@ def _StringToImage(text, size = 128):
     im = Image.new( 'RGBA', (bigsize,bigsize), "black") # create a new black image
     draw = ImageDraw.Draw(im)
     font = ImageFont.truetype('LiberationMono-Regular.ttf', 48)
-    (w,h) = draw.textsize(text, font=font)
-    ratio = bigsize/float(w + h)
+    wmax = 0
+    hmax = 0
+    for text in texts:
+        (w,h) = draw.textsize(text, font=font)
+        if w > wmax:
+            wmax = w
+            hmax = h
+    ratio = bigsize/float(wmax + hmax)
     fontsize = int(round(48*ratio))
-    h = int(round(ratio*h))
+    h = int(round(ratio*hmax))
+
     font = ImageFont.truetype('LiberationMono-Regular.ttf', fontsize)
-    draw.text((h//2,bigsize//2-h//2), text, fill=(255,255,255), font=font)
+
+    for i in range(len(texts)):
+        draw.text((h//2,bigsize//2+2*h*i-h*(2*len(texts))//2), texts[i], fill=(255,255,255), font=font)
     im = im.resize((size,size), Image.ANTIALIAS)
     return im
 
 def Hex(random = StrongRandom(""), size = 128, hexits = 12):
-    string = ''
+    string1 = ''
+    string2 = ''
     def myhex(n):
         if n < 10:
             return chr(ord('0')+n)
         return chr(ord('a') + (n-10))
-    for i in range(hexits):
-        string += myhex(random.randint(0, 15))
-    return _StringToImage(string, size)
+    for i in range(hexits//2):
+        string1 += myhex(random.randint(0, 15))
+        if (i+1) % 4 == 0:
+            string1 += ' '
+    for i in range(hexits - hexits//2):
+        string2 += myhex(random.randint(0, 15))
+        if (i+1) % 4 == 0:
+            string2 += ' '
+    if string1[len(string1)-1] == ' ':
+        string1 = string1[:-1]
+    if string2[len(string2)-1] == ' ':
+        string2 = string2[:-1]
+    return _StringsToImage([string1, string2], size)
 
 def MakeHex(hexits):
     return lambda random, size: Hex(random, size, hexits)
