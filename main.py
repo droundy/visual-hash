@@ -26,6 +26,8 @@ from kivy import platform
 from kivy.properties import StringProperty, NumericProperty #, ConfigParserProperty
 import settings as mysettings
 
+import perceptual
+
 try:
     import pyximport; pyximport.install()
 except:
@@ -357,10 +359,12 @@ class Pairs(BoxLayout):
         self.left_button.disabled = False
         self.right_button.disabled = False
     def PrintToFile(self, matches_value):
-        self.datafile.write('%s, %f, %d, %d\n' % (self.kind,
-                                                  self.img.thisf,
-                                                  matches_value,
-                                                  self.img.image.tostring() != self.img2.image.tostring()))
+        self.datafile.write('%s, %f, %d, %d, %g\n'
+                            % (self.kind,
+                               self.img.thisf,
+                               matches_value,
+                               self.img.image.tostring() != self.img2.image.tostring(),
+                               perceptual.difference(self.img.image, self.img2.image)))
         self.datafile.flush()
     def ItMatches(self):
         self.e.measured(self.img.thisf, False)
