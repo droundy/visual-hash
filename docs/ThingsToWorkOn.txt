@@ -1,10 +1,11 @@
 
 The data needed for collection is the following:
-    1. Hash type
-    2. f value
     3. Percent the two hashes are the same
-    4. Human repsonse, 1 or 0
     5. Data needed to recreate the hash
+    6. Time/date?
+    7. Player name?
+    8. Names for image files?
+    9. Player photo?
 
 
 
