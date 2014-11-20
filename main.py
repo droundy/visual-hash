@@ -120,9 +120,9 @@ class Matching(BoxLayout):
     next_differs = False
     def __init__(self, **kwargs):
         super(Matching, self).__init__(**kwargs)
-        self._keyboard = Window.request_keyboard(
-            self._keyboard_closed, self, 'text')
-        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        # self._keyboard = Window.request_keyboard(
+        #     self._keyboard_closed, self, 'text')
+        # self._keyboard.bind(on_key_down=self._on_keyboard_down)
     def _keyboard_closed(self):
         print('My keyboard have been closed!')
         self._keyboard.unbind(on_key_down=self._on_keyboard_down)
@@ -143,7 +143,7 @@ class Matching(BoxLayout):
     def begin_next_img(self):
         # pick the next image to test against, and start working on
         # the hashing.
-        hasher, = get_hasher()
+        hasher,kind = get_hasher()
         print 'finding frac in matching'
         #frac = self.e.choose_bits_frac()
         frac = pickFrac(100, 100, 0.005)
@@ -164,7 +164,7 @@ class Matching(BoxLayout):
         self.left_button.disabled = True
         self.right_button.text = 'I remember this'
         self.img.x = self.width
-        hasher, = get_hasher()
+        hasher,kind = get_hasher()
         self.img.text = '%08d' % SystemRandom().randrange(0, 10**8)
         self.rnd = VisualHash.StrongRandom(self.img.text)
         self.begin_next_img()
@@ -427,7 +427,7 @@ class TextHash(BoxLayout):
             return
     def on_text(self, *args):
         rnd = VisualHash.StrongRandom(self.text)
-        hasher, = get_hasher()
+        hasher,kind = get_hasher()
         NextImage(self.thehash, 512, lambda: rnd, hasher)
         Clock.schedule_once(lambda dt: self.update_image(), 0.5)
 
