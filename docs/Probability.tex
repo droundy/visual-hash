@@ -1,4 +1,4 @@
-\documentclass[]{minimal}
+\documentclass[]{report}
 
 \begin{document}
 
@@ -6,6 +6,8 @@
 \author{Author}
 \date{Today}
 
+
+\section{Introduction}\label{sec:introduction}
 
 \textbf{The Probability Function:}\newline
 This function is measuring the probability that two hashes, when compared, are found to be the same.\newline
@@ -18,5 +20,12 @@ $ however can range from 0 to very large numbers. The lower bound of the data ra
 By analyzing the shape of the $P(f)$ curve, the value of $n$ can be determined roughly. Since the function resembles $(1-x^n)$, the value of $n$ can be found by comparing the $P(f)$ curve to the known curves of functions such as $(1-x),(1-x^2),(1-x^3),(1-x^4)...$. \newline
 \par \textbf{Bayesian Statistics:}
 \par Bayesian statistics, as opposed to frequentist statistics, use certain evidence regarding the event being measured to create a more complete probability of the event occurring. \par \begin{center} $p(A|B) = \frac{p(B|A)*p(A)}{p(B)} $ \end{center}  \par where $p(A|B)$ is the probability of event A given evidence B, $p(B|A)$ is the probability of evidence B happening given event A happens, $p(A)$ is the probability of event A happening, and $p(B)$ is the probability of evidence B happening. Bayesian statistics gives a more realistic picture of the probability of an event occurring by using the probability of concurrent evidence to shape the statistics.  In this case, the prior evidence will be probabilities of prior $p(f)$ results. Thus the probability of any particular set of data given $a,q,$ and $n$ will be the product of every individual $p(f)$, where each $f$ value is distinct. 
+
+\begin{equation}\label{eq:stupid}
+    this is stupid
+\end{equation}
+
+\section{Conclusion}
+As discussed in Section~\ref{sec:introduction} and also in Equation \ref{eq:stupid} ...
 
 \end{document}
