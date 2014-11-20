@@ -8,7 +8,7 @@ __version__ = '0.0.0'
 
 # import cProfile
 
-import os, sys, inspect
+import os, sys, inspect, datetime
 from threading import Thread
 from Queue import Queue
 
@@ -331,6 +331,7 @@ class Pairs(BoxLayout):
             self.differs = self.next_differs
             #print 'Start working'
             im = self.img.next[0]
+            self.img.pil_image = im
             self.img.current_im = im.tostring()
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
@@ -339,6 +340,7 @@ class Pairs(BoxLayout):
             self.img.image = im
 
             im = self.img2.next[0]
+            self.img2.pil_image = im
             self.img2.current_im = im.tostring()
             texture = Texture.create(size=im.size)
             texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
@@ -359,8 +361,14 @@ class Pairs(BoxLayout):
         self.left_button.disabled = False
         self.right_button.disabled = False
     def PrintToFile(self, matches_value):
-        self.datafile.write('%s, %f, %d, %d, %g\n'
-                            % (self.kind,
+        epoch = datetime.datetime(2014, 11, 20, 13)
+        now = datetime.datetime.now()
+        self.img.pil_image.save('%s-A.png' % (now - epoch).total_seconds())
+        self.img2.pil_image.save('%s-B.png' % (now - epoch).total_seconds())
+        self.datafile.write('%s, %s, %s, %f, %d, %d, %g\n'
+                            % (now,
+                               (now - epoch).total_seconds(),
+                               self.kind,
                                self.img.thisf,
                                matches_value,
                                self.img.image.tostring() != self.img2.image.tostring(),
