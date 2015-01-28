@@ -3,6 +3,7 @@ from __future__ import division
 
 import numpy
 import numpy.random as random
+import csv
 
 class model:
     def __init__(self, H, N, A):
@@ -31,6 +32,8 @@ class model:
     def __str__(self):
         return '<%g entropy, with %g "things" with %g states with error rate %g>' % (self.H, self.N, 1./self.q, self.A)
 
+
+            
 def playGame(P, fs):
     """ Given the true probability distribution P, perform random
     experiments at f values fs. """
@@ -39,6 +42,19 @@ def playGame(P, fs):
         if random.uniform() < P(fs[i]):#where is the P(f) function in the code?
             results[i] = 1
     return results
+
+def readcsv(csvname):
+    with open(csvname, 'rb') as csvf:
+        reader = csv.reader(csvf)
+        fs = []
+        results = []
+        for row in reader:
+            f = float(row[3])
+            result= float(row[4])
+            fs.append(f)
+            results.append(result)
+        return(fs, results)
+#print(fs, results)
 
 def findBayesProbability(P, fs, results):
     """ Find the Bayesian estimate of the probability that P is the
@@ -53,7 +69,7 @@ def findBayesProbability(P, fs, results):
     return prob # it's actually log probability
 
 def findBestHNA(fs, results):
-    Ns_1d = numpy.arange(1, 50, 0.5)
+    Ns_1d = numpy.arange(1, 100, 0.5)
     Hs_1d = numpy.arange(1, 100, 0.5)
     Ns, Hs = numpy.meshgrid(Ns_1d, Hs_1d)
     prob = numpy.zeros_like(Ns)
@@ -99,13 +115,13 @@ if __name__ == '__main__':
 
     P = model(50, 28, 0.1) # H, N, A
 
-    useDeterministic = False
-    if useDeterministic:
+    datasource = "csv"
+    if datasource == "deterministic":
         random.seed(0)
         fs = numpy.arange(0, 1, 0.001)
         results = playGame(P, fs)
         print 'total results', sum(results)
-    else:
+    elif datasource == "random":
         fs = numpy.array([0, 0.5, 1]) #starting f?
         results = playGame(P, fs) #seed results
         for i in range(100): #loop to generate further hash comparisons
@@ -114,7 +130,9 @@ if __name__ == '__main__':
             res = playGame(P, [nextf])
             fs = numpy.append(fs, nextf) #adds newest f to fs array
             results = numpy.append(results, res[0]) #updates results with newest result
-
+    elif datasource == "csv":
+        fs, results = readcsv("../pairs.csv")
+        
     Pbest = findBestHNA(fs, results)
     print 'Pbest is', Pbest
     plt.figure()
