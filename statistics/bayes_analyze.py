@@ -33,7 +33,7 @@ class model:
         return '<%g entropy, with %g "things" with %g states with error rate %g>' % (self.H, self.N, 1./self.q, self.A)
 
 
-            
+
 def playGame(P, fs):
     """ Given the true probability distribution P, perform random
     experiments at f values fs. """
@@ -51,9 +51,11 @@ def readcsv(csvname):
         for row in reader:
             f = float(row[3])
             result= float(row[4])
-            fs.append(f)
-            results.append(result)
-        return(fs, results)
+            kind = row[2].lstrip() # strip off leading spaces
+            if kind == 'fractal': # only consider fractals for now
+                fs.append(f)
+                results.append(result)
+        return(numpy.array(fs), numpy.array(results))
 #print(fs, results)
 
 def findBayesProbability(P, fs, results):
@@ -66,11 +68,11 @@ def findBayesProbability(P, fs, results):
             prob *= P(1.0*fs[i]) # *= is the same as prob*P(fs[i])
         else:
             prob *= 1 - P(1.0*fs[i])
-    return prob # it's actually log probability
+    return prob
 
 def findBestHNA(fs, results):
-    Ns_1d = numpy.arange(1, 100, 0.5)
-    Hs_1d = numpy.arange(1, 100, 0.5)
+    Ns_1d = numpy.arange(1, 200, 0.5)
+    Hs_1d = numpy.arange(1, 200, 0.5)
     Ns, Hs = numpy.meshgrid(Ns_1d, Hs_1d)
     prob = numpy.zeros_like(Ns)
     dA = 0.01
@@ -130,9 +132,28 @@ if __name__ == '__main__':
             res = playGame(P, [nextf])
             fs = numpy.append(fs, nextf) #adds newest f to fs array
             results = numpy.append(results, res[0]) #updates results with newest result
+    elif datasource == 'random-like-main':
+        def pickFrac(H, N, A):
+            P = model(H, N, A)
+            if A < 0.2:
+                probsame = 0.2
+            if random.random() < probsame:
+                return 0.0
+            C = random.random()
+            return P.f_from_C(C) #  find new f such that P.C(new_f) = R, by solving for f using bisection(numerically)
+        fs = numpy.array([0.0])
+        results = numpy.array([0.0])
+        for i in range(200):
+            nextf = pickFrac(100,100, 0.05)
+            fs = numpy.append(fs, nextf)
+            results = numpy.append(results, playGame(P, [nextf])[0])
     elif datasource == "csv":
         fs, results = readcsv("../pairs.csv")
-        
+
+    print 'number that look the same', len(fs[results<0.5])
+    print 'number that look different', len(fs[results>0.5])
+    print 'number of comparisons made', len(fs)
+
     Pbest = findBestHNA(fs, results)
     print 'Pbest is', Pbest
     plt.figure()
@@ -145,13 +166,14 @@ if __name__ == '__main__':
     plt.ylabel('Pbest(f)')
 
     plt.figure()
-    plt.hist((fs, fs[results>0.5], fs[results<0.5]))
+    plt.hist((fs, fs[results>0.5], fs[results<0.5]), label=('total', 'looks same', 'looks different'), bins=30)
+    plt.legend()
     plt.xlabel('$f$')
 
     #plt.show()
 
-    Ns_1d = numpy.arange(1, 100, 0.5)
-    Hs_1d = numpy.arange(1, 100, 0.5)
+    Ns_1d = numpy.arange(1, 200, 0.5)
+    Hs_1d = numpy.arange(1, 200, 0.5)
     Ns, Hs = numpy.meshgrid(Ns_1d, Hs_1d)
     prob = numpy.zeros_like(Ns)
     dA = 0.01
@@ -159,8 +181,8 @@ if __name__ == '__main__':
         PP = model(Hs, Ns, A)
         Pprior = 1.0/(1 + Hs/50 + 2*A)
         Pprior[Ns > Hs] = 0 # we do not believe that we can have less than one "bit" per "thing"
-        thisprob = Pprior*findBayesProbability(PP, fs, results)*dA
-        print 'prob of A =', A, 'is', sum(sum(thisprob))
+        thisprob = Pprior*findBayesProbability(PP, fs, results) # *dA
+        print 'prob of A =', A, 'is', sum(sum(thisprob)), 'with min value', thisprob.min()
         prob += thisprob
     prob /= sum(sum(prob)) # normalize the probability
 

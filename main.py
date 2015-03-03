@@ -58,194 +58,16 @@ class Home(TabbedPanel):
 
 animtime = 1.0
 
-class BayesUpdate(Thread):
-    def __init__(self, estimator):
-        super(BayesUpdate, self).__init__()
-        self.e = estimator
-        self.start()
-    def run(self):
-        if self.e.Puptodate:
-            #print 'skipping because all is up to date'
-            return
-        if self.e.Pworking:
-            #print 'skipping because already working on findBestHNA'
-            return
-        self.e.Puptodate = True
-        self.e.Pworking = True
-        #print 'starting findBestHNA'
-        self.e.P = bayes.findBestHNA(self.e.fs, self.e.results)
-        self.e.Pworking = False
-        #print 'done with findBestHNA'
-
-class BayesEntropyEstimator(object):
-    def __init__(self):
-        self.P = bayes.model(30, 30, 0.1)
-        self.fs = [0.0, 1.0]
-        self.results = [1.0, 0.0]
-        self.nextf = 0.5
-        self.Puptodate = False
-        self.Pworking = False
-    def _update_P(self):
-        BayesUpdate(self)
-    def choose_bits_frac(self, maxentropy=128):
-        #print 'fs', self.fs
-        #print 'results', self.results
-        self._update_P()
-        self.nextf = bayes.pickNextF(self.P)
-        return self.nextf
-    def estimate_entropy(self):
-        self._update_P()
-        print self.P
-        return self.P.H
-    def reset_entropy_estimate(self):
-        self.__init__()
-    def measured(self, f, differs):
-        self.fs.append(f)
-        if differs:
-            self.results.append(0.0)
-        else:
-            self.results.append(1.0)
-        self.Puptodate = False
-        print 'found', differs, 'at', f
-
 image_size = 400
 
-def pickFrac(H, N, A):
-    P = bayes.model(H, N, A)
+def pickFrac():
+    if SystemRandom().random() < 0.5:
+        P = bayes.model(200, 100, 0.05)
+    else:
+        P = bayes.model(32, 32, 0.05)
     return bayes.pickNextF(P)
 
-class Matching(BoxLayout):
-    e = BayesEntropyEstimator()
-    differs = False
-    next_differs = False
-    def __init__(self, **kwargs):
-        super(Matching, self).__init__(**kwargs)
-        # self._keyboard = Window.request_keyboard(
-        #     self._keyboard_closed, self, 'text')
-        # self._keyboard.bind(on_key_down=self._on_keyboard_down)
-    def _keyboard_closed(self):
-        print('My keyboard have been closed!')
-        self._keyboard.unbind(on_key_down=self._on_keyboard_down)
-        self._keyboard = None
-    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        if keycode[1] == 'left':
-            self.ItDiffers()
-        elif keycode[1] == 'right':
-            self.ItMatches()
-        elif keycode[1] == 'escape':
-            keyboard.release()
-            return False # exit the game!
-        else:
-            print 'keycode', keycode, 'unrecognized'
-        # Return True to accept the key. Otherwise, it will be used by
-        # the system.
-        return True
-    def begin_next_img(self):
-        # pick the next image to test against, and start working on
-        # the hashing.
-        hasher,kind = get_hasher()
-        print 'finding frac in matching'
-        #frac = self.e.choose_bits_frac()
-        frac = pickFrac(100, 100, 0.005)
-        self.img.num += 1
-        self.rnd.reset()
-        #print 'working on image with frac', frac
-        if frac != 0:
-            # The following could either use TweakedRandom or
-            # BitTweaked random.  Either should work, and will give
-            # different statistical behavior (which could be handy).
-            self.rnd = VisualHash.BitTweakedRandom(self.rnd, frac, self.img.num, self.img.num)
-        NextImage(self.img, image_size, lambda: self.rnd, hasher)
-    def on_select(self, *args):
-        self.img.thisf = 1 # meaningless value so it is defined
-        self.img.current_im = ''
-        self.rnd = VisualHash.StrongRandom(self.img.text)
-        self.e = BayesEntropyEstimator()
-        self.left_button.disabled = True
-        self.right_button.text = 'I remember this'
-        self.img.x = self.width
-        hasher,kind = get_hasher()
-        self.img.text = '%08d' % SystemRandom().randrange(0, 10**8)
-        self.rnd = VisualHash.StrongRandom(self.img.text)
-        self.begin_next_img()
-        anim = Animation(x=1.1*self.width, t='in_back', duration=animtime)
-        anim.start(self.img)
-        Clock.schedule_once(lambda dt: self.Reset(), animtime)
-    def Reset(self):
-        if self.img.have_next:
-            self.entropy_label.text = 'Entropy:  %.1f' % self.e.estimate_entropy()
-            #print 'Reset working'
-            self.differs = self.next_differs
-            im = self.img.next[0]
-            self.img.old_im = self.img.current_im
-            self.img.current_im = im.tostring()
-            texture = Texture.create(size=im.size)
-            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
-            texture.flip_vertical()
-            self.img.texture = texture
-            self.right_button.disabled = False
-        else:
-            #print 'Reset pending'
-            self.left_button.disabled = True
-            self.right_button.disabled = True
-            Clock.schedule_once(lambda dt: self.Reset(), 0.25)
-            return
-        anim = Animation(x=0, t='out_back', duration=animtime)
-        anim.start(self.img)
-    def Begin(self):
-        anim = Animation(x=1.1*self.width, duration=animtime)
-        anim.start(self.img)
-        Clock.schedule_once(lambda dt: self.Start(), animtime)
-    def Start(self):
-        self.right_button.text = 'Same'
-        if self.img.have_next:
-            self.differs = self.next_differs
-            #print 'Start working'
-            im = self.img.next[0]
-            self.img.old_im = self.img.current_im
-            self.img.current_im = im.tostring()
-            assert(not (self.e.nextf == 0 and self.img.current_im != self.img.old_im))
-            texture = Texture.create(size=im.size)
-            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
-            texture.flip_vertical()
-            self.img.texture = texture
-            self.img.thisf = self.e.nextf
-            self.begin_next_img()
-            self.entropy_label.text = 'Entropy:  %.1f  f %g' % (self.e.estimate_entropy(), self.img.thisf)
-        else:
-            #print 'Start pending'
-            self.left_button.disabled = True
-            self.right_button.disabled = True
-            Clock.schedule_once(lambda dt: self.Start(), 0.25)
-            return
-        anim = Animation(x=0, t='out_back', duration=animtime)
-        anim.start(self.img)
-        self.left_button.disabled = False
-        self.right_button.disabled = False
-    def ItMatches(self):
-        assert(not (self.img.thisf == 0 and self.img.current_im != self.img.old_im))
-        if self.img.current_im == self.img.old_im:
-            print 'you are correct, it is same', self.img.thisf
-        else:
-            print 'you are wrong!!! it differs!', self.img.thisf
-        self.e.measured(self.img.thisf, False)
-        anim = Animation(x=1.1*self.width, duration=animtime)
-        anim.start(self.img)
-        Clock.schedule_once(lambda dt: self.Start(), animtime)
-    def ItDiffers(self):
-        assert(not (self.img.thisf == 0 and self.img.current_im != self.img.old_im))
-        if self.img.current_im != self.img.old_im:
-            print 'you are correct, it differs', self.img.thisf
-        else:
-            print 'you are wrong!!! it was same', self.img.thisf
-        self.e.measured(self.img.thisf, True)
-        anim = Animation(x=-1.1*self.width, duration=animtime)
-        anim.start(self.img)
-        Clock.schedule_once(lambda dt: self.Start(), animtime)
-
-
 class Pairs(BoxLayout):
-    e = BayesEntropyEstimator()
     angle1 = NumericProperty(0)
     angle2 = NumericProperty(0)
     differs = False
@@ -282,17 +104,16 @@ class Pairs(BoxLayout):
         self.img.num += 1
         self.rnd.reset()
         self.rnd = VisualHash.StrongRandom(self.img.text + str(self.img.num))
+        self.img.nextf = pickFrac()
         def get_rnd2():
-            frac = self.e.choose_bits_frac()
-            #print 'working on image with frac', frac
-            if frac != 0:
+            if self.img.nextf != 0:
                 # The following could either use TweakedRandom or
                 # BitTweaked random.  Either should work, and will give
                 # different statistical behavior (which could be handy).
                 return VisualHash.BitTweakedRandom(VisualHash.StrongRandom(self.img.text + str(self.img.num)),
-                                                        frac,
-                                                        self.img.num+1,
-                                                        self.img.num+1)
+                                                   self.img.nextf,
+                                                   self.img.num+1,
+                                                   self.img.num+1)
             else:
                 return VisualHash.StrongRandom(self.img.text + str(self.img.num))
         NextImage(self.img, 200, lambda: self.rnd, hasher)
@@ -317,7 +138,6 @@ class Pairs(BoxLayout):
         self.img.current_im = ''
         self.img2.current_im = ''
         self.rnd = VisualHash.StrongRandom(self.img.text)
-        self.e = BayesEntropyEstimator()
         self.img.x = self.width
         self.img2.x = -self.width
         self.img.text = '%08d' % SystemRandom().randrange(0, 10**8)
@@ -348,9 +168,8 @@ class Pairs(BoxLayout):
             self.img2.texture = texture
             self.img2.image = im
 
-            self.img.thisf = self.e.nextf
+            self.img.thisf = self.img.nextf
             self.begin_next_img()
-            self.entropy_label.text = 'Entropy:  %.1f' % (self.e.estimate_entropy())
         else:
             #print 'Start pending'
             Clock.schedule_once(lambda dt: self.Start(), 0.25)
@@ -365,23 +184,21 @@ class Pairs(BoxLayout):
         now = datetime.datetime.now()
         self.img.pil_image.save('%s-A.png' % (now - epoch).total_seconds())
         self.img2.pil_image.save('%s-B.png' % (now - epoch).total_seconds())
-        self.datafile.write('%s, %s, %s, %f, %d, %d, %g\n'
+        self.datafile.write('%s, %15s, %10s, %10f, %d, %d, %g\n'
                             % (now,
                                (now - epoch).total_seconds(),
                                self.kind,
                                self.img.thisf,
                                matches_value,
-                               self.img.image.tostring() != self.img2.image.tostring(),
+                               self.img.image.tostring() == self.img2.image.tostring(),
                                perceptual.difference(self.img.image, self.img2.image)))
         self.datafile.flush()
     def ItMatches(self):
-        self.e.measured(self.img.thisf, False)
-        self.PrintToFile(False)
+        self.PrintToFile(True)
         self.anim_out()
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def ItDiffers(self):
-        self.e.measured(self.img.thisf, True)
-        self.PrintToFile(True)
+        self.PrintToFile(False)
         self.anim_out()
         Clock.schedule_once(lambda dt: self.Start(), animtime)
 

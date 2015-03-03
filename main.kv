@@ -18,48 +18,14 @@
         text: 'Matching stuff here'
         on_text: root.text = self.text; root.on_text()
 
-<Matching>:
-    left_button: left_button
-    right_button: right_button
-    img: img
-    entropy_label: entropy_label
-    orientation: 'vertical'
-    Label:
-        id: entropy_label
-        size_hint: 1, None
-        height: sp(24)
-        text: ''
-    Image:
-        allow_stretch: True
-        text: 'matching1'
-        id: img
-        x: root.width
-        num: 0
-        have_next: False
-    BoxLayout:
-        size_hint: 1, None
-        height: sp(80)
-        orientation: 'horizontal'
-        Button:
-            id: left_button
-            text: 'Different'
-            disabled: True
-            on_press: root.ItDiffers()
-        Button:
-            id: right_button
-            text: 'I remember this'
-            on_press: root.ItMatches() if self.text == 'Same' else root.Begin()
-
 <Pairs>:
     left_button: left_button
     right_button: right_button
     img: img
     img2: img2
-    entropy_label: entropy_label
     orientation: 'vertical'
     spacing: sp(25)
     Label:
-        id: entropy_label
         size_hint: 1, None
         height: sp(24)
         text: ''
@@ -158,12 +124,6 @@
     TabbedPanelItem:
         text: 'Pairs'
         Pairs:
-    TabbedPanelItem:
-        text: 'Matching'
-        Matching:
-    #TabbedPanelItem:
-    #    text: 'Memory'
-    #    Memory:
     TabbedPanelItem:
         text: 'TextHash'
         TextHash:
