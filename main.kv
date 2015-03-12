@@ -76,45 +76,69 @@
             disabled: True
             on_press: root.ItMatches()
 
-<Memory>:
+<SlowPairs>:
     left_button: left_button
+    middle_button: middle_button
     right_button: right_button
     img: img
-    original: original
-    entropy_label: entropy_label
+    img2: img2
     orientation: 'vertical'
+    spacing: sp(25)
     Label:
-        id: entropy_label
         size_hint: 1, None
         height: sp(24)
         text: ''
     Image:
-        size_hint: 1, 1
-        allow_stretch: True
-        text: 'matching1'
-        id: original
-        have_next: False
-    Image:
-        size_hint: 1, 1
         allow_stretch: True
         text: 'matching1'
         id: img
         x: root.width
         num: 0
         have_next: False
+        canvas.before:
+            PushMatrix
+            Rotate:
+                axis: 0,0,1
+                angle: root.angle1
+                origin: self.center
+        canvas.after:
+            PopMatrix
+    Image:
+        allow_stretch: True
+        text: 'matching1'
+        id: img2
+        x: -root.width
+        num: 0
+        have_next: False
+        canvas.before:
+            PushMatrix
+            Rotate:
+                axis: 0,0,1
+                angle: root.angle2
+                origin: self.center
+        canvas.after:
+            PopMatrix
     BoxLayout:
         size_hint: 1, None
         height: sp(80)
         orientation: 'horizontal'
+        padding: [sp(5),sp(25),sp(5),sp(5)]
+        spacing: sp(5)
         Button:
             id: left_button
             text: 'Different'
             disabled: True
             on_press: root.ItDiffers()
         Button:
+            id: middle_button
+            text: 'I missed it!'
+            disabled: True
+            on_press: root.MissedItOops()
+        Button:
             id: right_button
-            text: 'I remember this'
-            on_press: root.ItMatches() if self.text == 'Same' else root.Start()
+            text: 'Same'
+            disabled: True
+            on_press: root.ItMatches()
 
 <Home>:
     #size_hint: .5, .5
@@ -124,6 +148,9 @@
     TabbedPanelItem:
         text: 'Pairs'
         Pairs:
+    TabbedPanelItem:
+        text: 'Memory'
+        SlowPairs:
     TabbedPanelItem:
         text: 'TextHash'
         TextHash:

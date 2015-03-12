@@ -72,11 +72,13 @@ class Pairs(BoxLayout):
     angle2 = NumericProperty(0)
     differs = False
     next_differs = False
-    def __init__(self, **kwargs):
-        super(Pairs, self).__init__(**kwargs)
+    def grabkeyboard(self):
         self._keyboard = Window.request_keyboard(
             self._keyboard_closed, self, 'text')
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
+    def __init__(self, **kwargs):
+        super(Pairs, self).__init__(**kwargs)
+        self.grabkeyboard()
         self.datafile = open('pairs.csv', 'a')
         self.newkind = 'nothing'
     def _keyboard_closed(self):
@@ -135,6 +137,7 @@ class Pairs(BoxLayout):
         self.left_button.disabled = True
         self.right_button.disabled = True
     def on_select(self, *args):
+        self.grabkeyboard()
         self.img.current_im = ''
         self.img2.current_im = ''
         self.rnd = VisualHash.StrongRandom(self.img.text)
@@ -199,6 +202,155 @@ class Pairs(BoxLayout):
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def ItDiffers(self):
         self.PrintToFile(False)
+        self.anim_out()
+        Clock.schedule_once(lambda dt: self.Start(), animtime)
+
+class SlowPairs(BoxLayout):
+    angle1 = NumericProperty(0)
+    angle2 = NumericProperty(0)
+    differs = False
+    next_differs = False
+    def grabkeyboard(self):
+        self._keyboard = Window.request_keyboard(
+            self._keyboard_closed, self, 'text')
+        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+    def __init__(self, **kwargs):
+        super(SlowPairs, self).__init__(**kwargs)
+        self.grabkeyboard()
+        self.datafile = open('memory.csv', 'a')
+        self.newkind = 'nothing'
+    def _keyboard_closed(self):
+        print('My keyboard have been closed!')
+        self._keyboard.unbind(on_key_down=self._on_keyboard_down)
+        self._keyboard = None
+    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+        if keycode[1] == 'left':
+            self.ItDiffers()
+        elif keycode[1] == 'down':
+            self.MissedItOops()
+        elif keycode[1] == 'right':
+            self.ItMatches()
+        elif keycode[1] == 'escape':
+            keyboard.release()
+            return False # exit the game!
+        else:
+            print 'keycode', keycode, 'unrecognized'
+        # Return True to accept the key. Otherwise, it will be used by
+        # the system.
+        return True
+    def begin_next_img(self):
+        # pick the next image to test against, and start working on
+        # the hashing.
+        self.kind = self.newkind
+        hasher, self.newkind = get_hasher()
+        self.img.num += 1
+        self.rnd.reset()
+        self.rnd = VisualHash.StrongRandom(self.img.text + str(self.img.num))
+        self.img.nextf = pickFrac()
+        def get_rnd2():
+            if self.img.nextf != 0:
+                # The following could either use TweakedRandom or
+                # BitTweaked random.  Either should work, and will give
+                # different statistical behavior (which could be handy).
+                return VisualHash.BitTweakedRandom(VisualHash.StrongRandom(self.img.text + str(self.img.num)),
+                                                   self.img.nextf,
+                                                   self.img.num+1,
+                                                   self.img.num+1)
+            else:
+                return VisualHash.StrongRandom(self.img.text + str(self.img.num))
+        NextImage(self.img, 200, lambda: self.rnd, hasher)
+        NextImage(self.img2, 200, get_rnd2, hasher)
+    def anim_in(self):
+        pause_time = 4.0 # seconds
+        wiggle = int((self.img.width - self.img.height)/2)
+        #print 'wiggle', wiggle, 'versus', self.width
+        xpos1 = 0
+        anim = Animation(x=xpos1, t='out_back', duration=animtime) \
+             + Animation(x=xpos1, t='out_back', duration=pause_time) \
+             + Animation(x=1.1*self.width, t='out_back', duration=animtime)
+        anim.start(self.img)
+        xpos2 = 0
+        anim = Animation(x=-1.1*self.width, t='out_back', duration=animtime+pause_time) \
+             + Animation(x=xpos2, t='out_back', duration=animtime)
+        anim.start(self.img2)
+    def anim_out(self):
+        anim = Animation(x=1.1*self.width, duration=animtime)
+        anim.start(self.img)
+        anim = Animation(x=-1.1*self.width, duration=animtime)
+        anim.start(self.img2)
+        self.left_button.disabled = True
+        self.middle_button.disabled = True
+        self.right_button.disabled = True
+    def on_select(self, *args):
+        self.grabkeyboard()
+        self.img.current_im = ''
+        self.img2.current_im = ''
+        self.rnd = VisualHash.StrongRandom(self.img.text)
+        self.img.x = self.width
+        self.img2.x = -self.width
+        self.img.text = '%08d' % SystemRandom().randrange(0, 10**8)
+        self.rnd = VisualHash.StrongRandom(self.img.text)
+        self.rnd2 = VisualHash.StrongRandom(self.img.text)
+        self.begin_next_img()
+        self.anim_out()
+        Clock.schedule_once(lambda dt: self.Start(), animtime)
+    def Start(self):
+        if self.img.have_next and self.img2.have_next:
+            self.differs = self.next_differs
+            #print 'Start working'
+            im = self.img.next[0]
+            self.img.pil_image = im
+            self.img.current_im = im.tostring()
+            texture = Texture.create(size=im.size)
+            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            texture.flip_vertical()
+            self.img.texture = texture
+            self.img.image = im
+
+            im = self.img2.next[0]
+            self.img2.pil_image = im
+            self.img2.current_im = im.tostring()
+            texture = Texture.create(size=im.size)
+            texture.blit_buffer(im.tostring(), colorfmt='rgba', bufferfmt='ubyte')
+            texture.flip_vertical()
+            self.img2.texture = texture
+            self.img2.image = im
+
+            self.img.thisf = self.img.nextf
+            self.begin_next_img()
+        else:
+            #print 'Start pending'
+            Clock.schedule_once(lambda dt: self.Start(), 0.25)
+            return
+        self.angle1 = SystemRandom().random()*60 - 30
+        self.angle2 = SystemRandom().random()*60 - 30
+        self.anim_in()
+        self.left_button.disabled = False
+        self.middle_button.disabled = False
+        self.right_button.disabled = False
+    def PrintToFile(self, matches_value):
+        epoch = datetime.datetime(2014, 11, 20, 13)
+        now = datetime.datetime.now()
+        self.img.pil_image.save('%s-A.png' % (now - epoch).total_seconds())
+        self.img2.pil_image.save('%s-B.png' % (now - epoch).total_seconds())
+        self.datafile.write('%s, %15s, %10s, %10f, %d, %d, %g\n'
+                            % (now,
+                               (now - epoch).total_seconds(),
+                               self.kind,
+                               self.img.thisf,
+                               matches_value,
+                               self.img.image.tostring() == self.img2.image.tostring(),
+                               perceptual.difference(self.img.image, self.img2.image)))
+        self.datafile.flush()
+    def ItMatches(self):
+        self.PrintToFile(True)
+        self.anim_out()
+        Clock.schedule_once(lambda dt: self.Start(), animtime)
+    def ItDiffers(self):
+        self.PrintToFile(False)
+        self.anim_out()
+        Clock.schedule_once(lambda dt: self.Start(), animtime)
+    def MissedItOops(self):
         self.anim_out()
         Clock.schedule_once(lambda dt: self.Start(), animtime)
 
