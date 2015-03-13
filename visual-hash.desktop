@@ -1,0 +1,7 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Visual Hash
+Exec=/home/visualhash/visual-hash/main.py
+Icon=/home/visualhash/visual-hash/icon.png
+Type=Application
+Categories=Games;
