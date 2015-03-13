@@ -1,7 +1,7 @@
 #!/usr/bin/python2
 
-# from kivy.config import Config
-# Config.set('graphics', 'width', '1000')
+from kivy.config import Config
+Config.set('graphics', 'fullscreen', 'auto')
 # Config.write()
 
 __version__ = '0.0.0'
@@ -58,7 +58,7 @@ class Home(TabbedPanel):
 
 animtime = 1.0
 
-image_size = 400
+image_size = 500
 
 def pickFrac():
     if SystemRandom().random() < 0.5:
@@ -118,8 +118,8 @@ class Pairs(BoxLayout):
                                                    self.img.num+1)
             else:
                 return VisualHash.StrongRandom(self.img.text + str(self.img.num))
-        NextImage(self.img, 200, lambda: self.rnd, hasher)
-        NextImage(self.img2, 200, get_rnd2, hasher)
+        NextImage(self.img, image_size, lambda: self.rnd, hasher)
+        NextImage(self.img2, image_size, get_rnd2, hasher)
     def anim_in(self):
         wiggle = int((self.img.width - self.img.height)/2)
         #print 'wiggle', wiggle, 'versus', self.width
@@ -258,8 +258,8 @@ class SlowPairs(BoxLayout):
                                                    self.img.num+1)
             else:
                 return VisualHash.StrongRandom(self.img.text + str(self.img.num))
-        NextImage(self.img, 200, lambda: self.rnd, hasher)
-        NextImage(self.img2, 200, get_rnd2, hasher)
+        NextImage(self.img, image_size, lambda: self.rnd, hasher)
+        NextImage(self.img2, image_size, get_rnd2, hasher)
     def anim_in(self):
         pause_time = 4.0 # seconds
         wiggle = int((self.img.width - self.img.height)/2)
@@ -292,11 +292,13 @@ class SlowPairs(BoxLayout):
         self.rnd = VisualHash.StrongRandom(self.img.text)
         self.rnd2 = VisualHash.StrongRandom(self.img.text)
         self.begin_next_img()
-        self.anim_out()
+
         Clock.schedule_once(lambda dt: self.Start(), animtime)
     def Start(self):
         if self.img.have_next and self.img2.have_next:
             self.differs = self.next_differs
+            self.img.x = self.width
+            self.img2.x = -self.width
             #print 'Start working'
             im = self.img.next[0]
             self.img.pil_image = im
