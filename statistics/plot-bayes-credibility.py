@@ -89,9 +89,18 @@ def findBestHNA(fs, results):
     return model(bestH, bestN, bestA)
 
 import matplotlib.pyplot as plt
-for hashkind in ['fractal', 'flag']:
+
+all_fs = {}
+all_results = {}
+
+all_kinds = ['fractal', 'flag']
+
+for hashkind in all_kinds:
 
     fs, results = readcsv("../pairs.csv", hashkind)
+
+    all_fs[hashkind] = fs
+    all_results[hashkind] = results
 
     print 'number that look the same', len(fs[results<0.5])
     print 'number that look different', len(fs[results>0.5])
@@ -109,9 +118,14 @@ for hashkind in ['fractal', 'flag']:
     plt.ylabel('Pbest(f)')
 
     plt.figure()
+
     plt.hist((fs, fs[results>0.5], fs[results<0.5]), label=('total', 'looks same', 'looks different'), bins=30)
     plt.legend()
     plt.xlabel('$f$')
+
+    plt.title('Nice plot needs better name %s' % hashkind)
+
+    plt.savefig('human-answers-vs-f-%s.pdf' % hashkind)
 
     #plt.show()
 
@@ -161,4 +175,35 @@ for hashkind in ['fractal', 'flag']:
 
     plt.savefig('prob-vs-H-%s.pdf' % hashkind)
 
-    #plt.show()
+
+# The following plots fraction of human answers vs fraction f
+
+plt.figure()
+
+for hashkind in all_kinds:
+    f = all_fs[hashkind]
+    results = all_results[hashkind]
+
+    delta_percentile = 100.0/numpy.sqrt(len(f))
+    f_bins = [0]
+    for p in numpy.arange(delta_percentile, 99.0, delta_percentile):
+        f_bins.append(numpy.percentile(f, p))
+    f_bins.append(1.0)
+    f_bins = numpy.array(f_bins)
+
+    user_answers = numpy.zeros_like(f_bins)
+    f_bin_centers = numpy.zeros_like(f_bins)
+    for i in range(1,len(f_bins)):
+        is_in_bin = numpy.logical_and(f >= f_bins[i-1], f <= f_bins[i])
+        num_in_bin = numpy.count_nonzero(is_in_bin)
+        num_yes = numpy.count_nonzero(numpy.logical_and(is_in_bin, results < 0.5))
+        user_answers[i] = float(num_yes)/float(num_in_bin)
+        f_bin_centers[i] = 0.5*(f_bins[i-1]+f_bins[i])
+
+    plt.plot(f_bin_centers, user_answers, label=hashkind)
+
+plt.title('Probability human thinks hashes differ')
+plt.xlabel('$x$')
+plt.ylabel('$P$')
+plt.legend(loc='best')
+plt.savefig('human-answers-vs-f.pdf')
