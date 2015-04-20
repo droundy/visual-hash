@@ -14,7 +14,7 @@ class model:
     def __str__(self):
         return '<%g entropy with error rate %g>' % (self.H, self.A)
 
-def readcsv(csvname):
+def readcsv(csvname, hashkind):
     with open(csvname, 'rb') as csvf:
         reader = csv.reader(csvf)
         fs = []
@@ -23,7 +23,7 @@ def readcsv(csvname):
             f = float(row[3])
             result= float(row[4])
             kind = row[2].lstrip() # strip off leading spaces
-            if kind == 'fractal': # only consider fractals for now
+            if kind == hashkind:
                 fs.append(f)
                 results.append(result)
         return(numpy.array(fs), numpy.array(results))
@@ -61,7 +61,7 @@ def findBestHA(fs, results):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    fs, results = readcsv("../pairs.csv")
+    fs, results = readcsv("../pairs.csv", 'fractal')
 
     print 'number that look the same', len(fs[results<0.5])
     print 'number that look different', len(fs[results>0.5])
